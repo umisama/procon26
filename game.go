@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"strings"
 )
@@ -77,18 +78,30 @@ func getLinesFromFile(path string) ([]string, error) {
 }
 
 func (game *Game) Run() *Plan {
-	p := NewPlan(game.field, game.numStone)
-base:
-	for _, sBase := range game.stoneBase {
-		for x := 0; x < 32; x++ {
-			for y := 0; y < 32; y++ {
-				for _, stone := range sBase.GetVariations() {
-					if p.Put(x, y, stone) {
-						continue base
+	return game.AlgorithmRandom(1000)
+}
+
+func (game *Game) AlgorithmRandom(times int) *Plan {
+	var best *Plan = nil
+	for i := 0; i < times; i++ {
+		p := NewPlan(game.field, game.numStone)
+	base:
+		for _, sBase := range game.stoneBase {
+			for _, x := range rand.Perm(32) {
+				for _, y := range rand.Perm(32) {
+					for _, stone := range sBase.GetVariations() {
+						if p.Put(x, y, stone) {
+							continue base
+						}
 					}
 				}
 			}
 		}
+
+		if best == nil || best.Score() > p.Score() {
+			fmt.Println("new answer! -> score(%d) on %d times", p.Score(), i)
+			best = p
+		}
 	}
-	return p
+	return best
 }

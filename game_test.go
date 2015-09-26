@@ -86,5 +86,7 @@ func TestNewGame(t *testing.T) {
 	if err != nil {
 		t.Error("got error: ", err.Error())
 	}
-	game.Run()
+	if !testing.Short() {
+		game.Run()
+	}
 }
