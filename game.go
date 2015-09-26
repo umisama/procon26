@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"os"
 	"strings"
+	"time"
 )
 
 func main() {
@@ -14,6 +15,7 @@ func main() {
 		panic(err)
 	}
 
+	rand.Seed(time.Now().Unix())
 	plan := game.Run()
 
 	fmt.Println(plan)
@@ -78,7 +80,7 @@ func getLinesFromFile(path string) ([]string, error) {
 }
 
 func (game *Game) Run() *Plan {
-	return game.AlgorithmRandom(1000)
+	return game.AlgorithmCheckingPartialScore()
 }
 
 func (game *Game) AlgorithmRandom(times int) *Plan {
@@ -89,17 +91,73 @@ func (game *Game) AlgorithmRandom(times int) *Plan {
 		for _, sBase := range game.stoneBase {
 			for _, x := range rand.Perm(32) {
 				for _, y := range rand.Perm(32) {
-					for _, stone := range sBase.GetVariations() {
-						if p.Put(x, y, stone) {
+					stones := sBase.GetVariations()
+					for _, i := range rand.Perm(len(stones)) {
+						if p.Put(x, y, stones[i]) {
 							continue base
 						}
 					}
 				}
 			}
 		}
-
 		if best == nil || best.Score() > p.Score() {
 			fmt.Println("new answer! -> score(%d) on %d times", p.Score(), i)
+			best = p
+		}
+	}
+	return best
+}
+
+func (game *Game) AlgorithmCheckingPartialScore() *Plan {
+	var best *Plan
+	for x := 0; x < 32; x++ {
+		for y := 0; y < 32; y++ {
+			println(x, y)
+			p := game.algorithmCheckingPartialScore(x, y)
+			if p != nil && (best == nil || best.Score() > p.Score()) {
+				best = p
+				println("new best! ->", best.Score())
+			}
+		}
+	}
+	return best
+}
+
+func (game *Game) algorithmCheckingPartialScore(x, y int) *Plan {
+	var best *Plan
+	for _, fStone := range game.stoneBase[0].GetVariations() {
+		p := NewPlan(game.field, game.numStone)
+		if !p.Put(x, y, fStone) {
+			continue
+		}
+		for i := 1; i < len(game.stoneBase); i++ {
+			var bestStone *Stone
+			var bestScore, bestX, bestY = 0x8fffffff, 0, 0
+			sBase := game.stoneBase[i]
+			for x := 0; x < 32; x++ {
+				for y := 0; y < 32; y++ {
+					for _, stone := range sBase.GetVariations() {
+						if !p.TestPut(x, y, stone) {
+							continue
+						}
+						partialScore := p.PartialScore(Rect{X: x - 2, Y: y, Width: 2, Height: stone.Height()}) +
+							p.PartialScore(Rect{X: x, Y: y - 2, Width: stone.Width(), Height: 2}) +
+							p.PartialScore(Rect{X: x + stone.Width() + 2, Y: y, Width: 2, Height: stone.Height()}) +
+							p.PartialScore(Rect{X: x, Y: y + stone.Height() + 2, Width: 2, Height: stone.Height()})
+						if bestScore > partialScore {
+							bestScore = partialScore
+							bestStone = stone
+							bestX, bestY = x, y
+						}
+						p.ClearTestStone()
+					}
+				}
+			}
+			if bestStone != nil {
+				p.Put(bestX, bestY, bestStone)
+			}
+		}
+		if p != nil && (best == nil || best.Score() > p.Score()) {
 			best = p
 		}
 	}

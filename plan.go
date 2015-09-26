@@ -5,9 +5,10 @@ import (
 )
 
 type Plan struct {
-	field     *Field
-	positions []*Position
-	numStone  int
+	field       *Field
+	positions   []*Position
+	tmpPosition *Position // temporary position
+	numStone    int
 }
 
 type Position struct {
@@ -48,10 +49,42 @@ func (plan *Plan) GetStoneDot(x, y int) bool {
 			return true
 		}
 	}
+	if plan.tmpPosition != nil && plan.tmpPosition.Get(x, y) {
+		return true
+	}
 	return false
 }
 
+func (plan *Plan) TestPut(x, y int, stone *Stone) bool {
+	if !plan.puttable(x, y, stone) {
+		return false
+	}
+	plan.tmpPosition = &Position{
+		x:     x,
+		y:     y,
+		stone: stone,
+	}
+	return true
+}
+
+func (plan *Plan) ClearTestStone() {
+	plan.tmpPosition = nil
+}
+
 func (plan *Plan) Put(x, y int, stone *Stone) bool {
+	if !plan.puttable(x, y, stone) {
+		return false
+	}
+	// put stone
+	plan.positions = append(plan.positions, &Position{
+		x:     x,
+		y:     y,
+		stone: stone,
+	})
+	return true
+}
+
+func (plan *Plan) puttable(x, y int, stone *Stone) bool {
 	if plan.isDuplicateStone(stone) {
 		return false
 	}
@@ -63,13 +96,6 @@ func (plan *Plan) Put(x, y int, stone *Stone) bool {
 			return false
 		}
 	}
-
-	// put stone
-	plan.positions = append(plan.positions, &Position{
-		x:     x,
-		y:     y,
-		stone: stone,
-	})
 	return true
 }
 
@@ -167,9 +193,21 @@ func (plan *Plan) findPositionByStoneNumber(num int) *Position {
 
 func (plan *Plan) Score() int {
 	score := 0
-	for i := 0; i < len(plan.field.buffer); i++ {
-		for j := 0; j < len(plan.field.buffer[0]); j++ {
-			if !plan.Get(i, j) {
+	for x := 0; x < len(plan.field.buffer); x++ {
+		for y := 0; y < len(plan.field.buffer[0]); y++ {
+			if !plan.Get(x, y) {
+				score += 1
+			}
+		}
+	}
+	return score
+}
+
+func (plan *Plan) PartialScore(rect Rect) int {
+	score := 0
+	for x := rect.X; x < rect.X+rect.Width; x++ {
+		for y := rect.Y; y < rect.Y+rect.Height; y++ {
+			if !plan.Get(x, y) {
 				score += 1
 			}
 		}
