@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"os"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -15,6 +16,7 @@ func main() {
 		panic(err)
 	}
 
+	runtime.GOMAXPROCS(runtime.NumCPU())
 	rand.Seed(time.Now().Unix())
 	plan := game.Run()
 
@@ -110,16 +112,48 @@ func (game *Game) AlgorithmRandom(times int) *Plan {
 
 func (game *Game) AlgorithmCheckingPartialScore() *Plan {
 	var best *Plan
-	for x := 0; x < 32; x++ {
-		for y := 0; y < 32; y++ {
-			println(x, y)
-			p := game.algorithmCheckingPartialScore(x, y)
-			if p != nil && (best == nil || best.Score() > p.Score()) {
-				best = p
+
+	type Job struct {
+		X int
+		Y int
+	}
+	queue := make(chan Job, 2048)
+	bestCandidates := make(chan *Plan, 2048)
+	runner := func(queue chan Job, bestCandidates chan *Plan) {
+		for {
+			job := <-queue
+			println("start: ", job.X, job.Y)
+			bestCandidates <- game.algorithmCheckingPartialScore(job.X, job.Y)
+			println("done: ", job.X, job.Y)
+		}
+	}
+	checkBest := func(candidates chan *Plan) {
+		for {
+			candidate := <-candidates
+			if candidate != nil && (best == nil || best.Score() > candidate.Score()) {
+				best = candidate
 				println("new best! ->", best.Score())
 			}
 		}
 	}
+
+	// start goroutines
+	for i := 0; i < runtime.NumCPU(); i++ {
+		go runner(queue, bestCandidates)
+	}
+	go checkBest(bestCandidates)
+
+	// push jobs
+	for x := 0; x < 1; x++ {
+		for y := 0; y < 32; y++ {
+			queue <- Job{
+				X: x,
+				Y: y,
+			}
+		}
+	}
+	time.Sleep(8 * time.Minute)
+	println("TIME IS UP!")
 	return best
 }
 
@@ -140,10 +174,7 @@ func (game *Game) algorithmCheckingPartialScore(x, y int) *Plan {
 						if !p.TestPut(x, y, stone) {
 							continue
 						}
-						partialScore := p.PartialScore(Rect{X: x - 2, Y: y, Width: 2, Height: stone.Height()}) +
-							p.PartialScore(Rect{X: x, Y: y - 2, Width: stone.Width(), Height: 2}) +
-							p.PartialScore(Rect{X: x + stone.Width() + 2, Y: y, Width: 2, Height: stone.Height()}) +
-							p.PartialScore(Rect{X: x, Y: y + stone.Height() + 2, Width: 2, Height: stone.Height()})
+						partialScore := p.PartialScore(Rect{X: x - 1, Y: y - 1, Width: stone.Width() + 2, Height: stone.Height() + 2})
 						if bestScore > partialScore {
 							bestScore = partialScore
 							bestStone = stone
