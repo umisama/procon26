@@ -38,7 +38,7 @@ func NewLineByInput(input string) (Line, error) {
 		case '1':
 			line[i] = true
 		default:
-			return nil, fmt.Errorf("0 or 1 expected, but got %#v", c)
+			return nil, fmt.Errorf("0 or 1 expected, but got %c", c)
 		}
 	}
 	return line, nil
