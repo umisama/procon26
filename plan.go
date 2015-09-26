@@ -39,6 +39,10 @@ func (plan *Plan) Get(x, y int) bool {
 	if plan.field.Get(x, y) {
 		return true
 	}
+	return plan.GetStoneDot(x, y)
+}
+
+func (plan *Plan) GetStoneDot(x, y int) bool {
 	for _, position := range plan.positions {
 		if position.Get(x, y) {
 			return true
@@ -53,6 +57,11 @@ func (plan *Plan) Put(x, y int, stone *Stone) bool {
 	}
 	if !plan.canPutStone(x, y, stone) {
 		return false
+	}
+	if !plan.isFirstStone() {
+		if !plan.isExistRelatedStone(x, y, stone) {
+			return false
+		}
 	}
 
 	// put stone
@@ -85,6 +94,27 @@ func (plan *Plan) canPutStone(x, y int, stone *Stone) bool {
 		}
 	}
 	return true
+}
+
+func (plan *Plan) isFirstStone() bool {
+	return len(plan.positions) == 0
+}
+
+func (plan *Plan) isExistRelatedStone(x, y int, stone *Stone) bool {
+	for stoneX := 0; stoneX < stone.Width(); stoneX++ {
+		for stoneY := 0; stoneY < stone.Height(); stoneY++ {
+			if !stone.Get(stoneX, stoneY) {
+				continue
+			}
+			if plan.GetStoneDot(stoneX+x-1, stoneY+y) ||
+				plan.GetStoneDot(stoneX+x, stoneY+y-1) ||
+				plan.GetStoneDot(stoneX+x+1, stoneY+y) ||
+				plan.GetStoneDot(stoneX+x, stoneY+y+1) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (plan *Plan) String() string {

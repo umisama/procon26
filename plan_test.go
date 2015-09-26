@@ -240,7 +240,7 @@ func TestPlanPut(t *testing.T) {
 			dig:     0,
 			flipped: false,
 		},
-		inputX: 3, inputY: 0,
+		inputX: 2, inputY: 0,
 		expect: true,
 	}, {
 		title: "deny if there is not duplicated stone(layerd)",
@@ -303,7 +303,7 @@ func TestPlanPut(t *testing.T) {
 		inputX: 1, inputY: 0,
 		expect: true,
 	}, {
-		title: "allow if there is not duplicated stone(layerd)",
+		title: "deny if there is not related stone.",
 		m: &Plan{
 			field: field,
 			positions: []*Position{{
@@ -331,7 +331,7 @@ func TestPlanPut(t *testing.T) {
 			flipped: false,
 		},
 		inputX: 2, inputY: 2,
-		expect: true,
+		expect: false,
 	}}
 	for _, c := range cases {
 		t.Log("start: ", c.title)
