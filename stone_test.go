@@ -67,7 +67,10 @@ func TestNewStoneBase(t *testing.T) {
 			t.Fatalf("error: %s", err.Error())
 		}
 
-		if !reflect.DeepEqual(m, c.expect) {
+		if !reflect.DeepEqual(m.buffer, c.expect.buffer) {
+			t.Errorf("expect 1 but got 2\n1:%v\n2:%v", *c.expect, *(m))
+		}
+		if !reflect.DeepEqual(m.rect, c.expect.rect) {
 			t.Errorf("expect 1 but got 2\n1:%v\n2:%v", *c.expect, *(m))
 		}
 	}
@@ -123,6 +126,7 @@ func TestStoneBaseVariations(t *testing.T) {
 	}}
 	for _, c := range cases {
 		t.Log("start: ", c.title)
+		c.input.createVariations()
 		val := c.input.GetVariations()
 		if len(val) != len(c.expect) {
 			t.Errorf("expect %d but got %d.", len(val), len(c.expect))

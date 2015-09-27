@@ -7,6 +7,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -111,7 +112,7 @@ func (game *Game) AlgorithmRandom(times int) *Plan {
 }
 
 func (game *Game) AlgorithmCheckingPartialScore() *Plan {
-	var best *Plan
+	var best BestMgr
 
 	type Job struct {
 		X int
@@ -122,18 +123,13 @@ func (game *Game) AlgorithmCheckingPartialScore() *Plan {
 	runner := func(queue chan Job, bestCandidates chan *Plan) {
 		for {
 			job := <-queue
-			println("start: ", job.X, job.Y)
-			bestCandidates <- game.algorithmCheckingPartialScore(job.X, job.Y)
-			println("done: ", job.X, job.Y)
+			bestCandidates <- game.algorithmCheckingPartialScore(job.X, job.Y, best.Score())
 		}
 	}
 	checkBest := func(candidates chan *Plan) {
 		for {
 			candidate := <-candidates
-			if candidate != nil && (best == nil || best.Score() > candidate.Score()) {
-				best = candidate
-				println("new best! ->", best.Score())
-			}
+			best.Set(candidate)
 		}
 	}
 
@@ -144,7 +140,7 @@ func (game *Game) AlgorithmCheckingPartialScore() *Plan {
 	go checkBest(bestCandidates)
 
 	// push jobs
-	for x := 0; x < 1; x++ {
+	for x := 0; x < 32; x++ {
 		for y := 0; y < 32; y++ {
 			queue <- Job{
 				X: x,
@@ -152,12 +148,11 @@ func (game *Game) AlgorithmCheckingPartialScore() *Plan {
 			}
 		}
 	}
-	time.Sleep(8 * time.Minute)
-	println("TIME IS UP!")
-	return best
+	time.Sleep(5 * time.Minute)
+	return best.Get()
 }
 
-func (game *Game) algorithmCheckingPartialScore(x, y int) *Plan {
+func (game *Game) algorithmCheckingPartialScore(x, y, score int) *Plan {
 	var best *Plan
 	for _, fStone := range game.stoneBase[0].GetVariations() {
 		p := NewPlan(game.field, game.numStone)
@@ -174,7 +169,7 @@ func (game *Game) algorithmCheckingPartialScore(x, y int) *Plan {
 						if !p.TestPut(x, y, stone) {
 							continue
 						}
-						partialScore := p.PartialScore(Rect{X: x - 1, Y: y - 1, Width: stone.Width() + 2, Height: stone.Height() + 2})
+						partialScore := p.PartialScore(Rect{X: x, Y: y, Width: stone.Width(), Height: stone.Height()})
 						if bestScore > partialScore {
 							bestScore = partialScore
 							bestStone = stone
@@ -193,4 +188,35 @@ func (game *Game) algorithmCheckingPartialScore(x, y int) *Plan {
 		}
 	}
 	return best
+}
+
+type BestMgr struct {
+	best  *Plan
+	score int
+	mu    sync.Mutex
+}
+
+func (b *BestMgr) Score() int {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.score
+}
+
+func (b *BestMgr) Set(candidate *Plan) {
+	if candidate == nil {
+		return
+	}
+
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.best == nil || b.best.Score() > candidate.Score() {
+		b.best = candidate
+		b.score = b.best.Score()
+	}
+}
+
+func (b *BestMgr) Get() *Plan {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.best
 }

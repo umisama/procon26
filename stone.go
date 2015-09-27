@@ -18,13 +18,16 @@ func NewStoneBase(number int, input []string) (*StoneBase, error) {
 		buffer: trimmedBuf,
 		rect:   rect,
 	}
+
+	m.createVariations()
 	return m, nil
 }
 
 type StoneBase struct {
-	number int
-	buffer Buffer
-	rect   Rect // A trimmed rect in input
+	number     int
+	buffer     Buffer
+	rect       Rect // A trimmed rect in input
+	variations []*Stone
 }
 
 func (m *StoneBase) Number() int {
@@ -70,6 +73,10 @@ func (m *StoneBase) checkWidth() int {
 }
 
 func (m *StoneBase) GetVariations() []*Stone {
+	return m.variations
+}
+
+func (m *StoneBase) createVariations() {
 	variations := make([]*Stone, 0, 8)
 
 	buf := m.buffer
@@ -96,7 +103,8 @@ func (m *StoneBase) GetVariations() []*Stone {
 		rect = rect.Rotate(8)
 		rectF = rectF.Rotate(8)
 	}
-	return removeDuplicateItems(variations)
+	m.variations = removeDuplicateItems(variations)
+	return
 }
 
 func removeDuplicateItems(stones []*Stone) []*Stone {

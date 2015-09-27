@@ -45,8 +45,7 @@ func NewLineByInput(input string) (Line, error) {
 }
 
 func NewLine(length int) Line {
-	line := make(Line, length)
-	return line
+	return make(Line, length)
 }
 
 func (line Line) Get(x int) bool {
@@ -214,7 +213,6 @@ func (buf Buffer) Rotate() Buffer {
 			nBuf[buf.Width()-x-1][y] = buf[y][x]
 		}
 	}
-
 	return nBuf
 }
 
