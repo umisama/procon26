@@ -6,12 +6,22 @@ import (
 	"math/rand"
 	"os"
 	"runtime"
+	"runtime/pprof"
 	"strings"
 	"sync"
 	"time"
 )
 
 func main() {
+	f, err := os.Create("pprof.dat")
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	pprof.StartCPUProfile(f)
+	defer pprof.StopCPUProfile()
+
 	game, err := NewGameFromFile(os.Args[1])
 	if err != nil {
 		panic(err)
@@ -118,37 +128,45 @@ func (game *Game) AlgorithmCheckingPartialScore() *Plan {
 		X int
 		Y int
 	}
-	queue := make(chan Job, 2048)
-	bestCandidates := make(chan *Plan, 2048)
-	runner := func(queue chan Job, bestCandidates chan *Plan) {
-		for {
-			job := <-queue
-			bestCandidates <- game.algorithmCheckingPartialScore(job.X, job.Y, best.Score())
-		}
+	queue := make(chan Job)
+	bestCandidates := make(chan *Plan)
+	for i := 0; i < runtime.NumCPU(); i++ {
+		go func(queue chan Job, bestCandidates chan *Plan) {
+			for {
+				job := <-queue
+				bestCandidates <- game.algorithmCheckingPartialScore(job.X, job.Y, best.Score())
+			}
+		}(queue, bestCandidates)
 	}
-	checkBest := func(candidates chan *Plan) {
+	go func(candidates chan *Plan) {
 		for {
 			candidate := <-candidates
 			best.Set(candidate)
 		}
-	}
-
-	// start goroutines
-	for i := 0; i < runtime.NumCPU(); i++ {
-		go runner(queue, bestCandidates)
-	}
-	go checkBest(bestCandidates)
+	}(bestCandidates)
 
 	// push jobs
-	for x := 0; x < 32; x++ {
-		for y := 0; y < 32; y++ {
-			queue <- Job{
-				X: x,
-				Y: y,
+	end := make(chan struct{})
+	go func(queue chan Job) {
+		for N := 0; N < 1; N++ {
+			for x := 0; x < 32; x++ {
+				for y := 0; y < 32; y++ {
+					queue <- Job{
+						X: x,
+						Y: y,
+					}
+				}
 			}
 		}
+		end <- struct{}{}
+	}(queue)
+
+	select {
+	case <-time.Tick(100 * time.Minute):
+		println("time is up!")
+	case <-end:
+		println("well done")
 	}
-	time.Sleep(5 * time.Minute)
 	return best.Get()
 }
 
@@ -159,35 +177,48 @@ func (game *Game) algorithmCheckingPartialScore(x, y, score int) *Plan {
 		if !p.Put(x, y, fStone) {
 			continue
 		}
-		for i := 1; i < len(game.stoneBase); i++ {
-			var bestStone *Stone
-			var bestScore, bestX, bestY = 0x8fffffff, 0, 0
-			sBase := game.stoneBase[i]
-			for x := 0; x < 32; x++ {
-				for y := 0; y < 32; y++ {
-					for _, stone := range sBase.GetVariations() {
-						if !p.TestPut(x, y, stone) {
-							continue
-						}
-						partialScore := p.PartialScore(Rect{X: x, Y: y, Width: stone.Width(), Height: stone.Height()})
-						if bestScore > partialScore {
-							bestScore = partialScore
-							bestStone = stone
-							bestX, bestY = x, y
-						}
-						p.ClearTestStone()
-					}
-				}
-			}
-			if bestStone != nil {
-				p.Put(bestX, bestY, bestStone)
-			}
-		}
+		p = game.sub()
 		if p != nil && (best == nil || best.Score() > p.Score()) {
 			best = p
 		}
 	}
 	return best
+}
+
+func (game *Game) sub() *Plan {
+	p := NewPlan(game.field, game.numStone)
+	for it := 0; it < game.numStone; it++ {
+		type bestStoneCont struct {
+			stone *Stone
+			x, y  int
+		}
+		var bestStone []bestStoneCont
+		var bestScore = 0x8fffffff
+		sBase := game.stoneBase[it]
+		for x := 0; x < 32; x++ {
+			for y := 0; y < 32; y++ {
+				for _, stone := range sBase.GetVariations() {
+					if !p.TestPut(x, y, stone) {
+						continue
+					}
+					partialScore := p.PartialScoreByExistStones()
+					if bestScore > partialScore {
+						bestScore = partialScore
+						bestStone = []bestStoneCont{{stone, x, y}}
+					} else if bestScore == partialScore {
+						bestStone = append(bestStone, bestStoneCont{stone, x, y})
+					}
+					p.ClearTestStone()
+				}
+			}
+		}
+
+		if len(bestStone) != 0 {
+			bestStoneI := bestStone[rand.Intn(len(bestStone))]
+			p.Put(bestStoneI.x, bestStoneI.y, bestStoneI.stone)
+		}
+	}
+	return p
 }
 
 type BestMgr struct {
@@ -212,6 +243,7 @@ func (b *BestMgr) Set(candidate *Plan) {
 	if b.best == nil || b.best.Score() > candidate.Score() {
 		b.best = candidate
 		b.score = b.best.Score()
+		println(b.score)
 	}
 }
 
