@@ -192,6 +192,9 @@ func (plan *Plan) findPositionByStoneNumber(num int) *Position {
 }
 
 func (plan *Plan) Score() int {
+	if plan == nil {
+		return 0x8fffffff
+	}
 	score := 0
 	for x := 0; x < len(plan.field.buffer); x++ {
 		for y := 0; y < len(plan.field.buffer[0]); y++ {
@@ -204,11 +207,31 @@ func (plan *Plan) Score() int {
 }
 
 func (plan *Plan) PartialScore(rect Rect) int {
+	if plan == nil {
+		return 0x8fffffff
+	}
 	score := 0
 	for x := rect.X; x < rect.X+rect.Width; x++ {
 		for y := rect.Y; y < rect.Y+rect.Height; y++ {
 			if !plan.Get(x, y) {
 				score += 1
+			}
+		}
+	}
+	return score
+}
+
+func (plan *Plan) PartialScoreByExistStones() int {
+	if plan == nil {
+		return 0x8fffffff
+	}
+	score := 0
+	for _, pos := range plan.positions {
+		for x := pos.x; x < pos.x+pos.stone.Width(); x++ {
+			for y := pos.y; y < pos.y+pos.stone.Height(); y++ {
+				if !plan.Get(x, y) {
+					score += 1
+				}
 			}
 		}
 	}
