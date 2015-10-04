@@ -50,7 +50,7 @@ func NewLine(length int) Line {
 
 func (line Line) Get(x int) bool {
 	if len(line) <= x || 0 > x {
-		return true
+		return false
 	}
 	return line[x]
 }
@@ -66,6 +66,16 @@ func (line Line) GetRange() (start, end int) {
 		}
 	}
 	return start, end
+}
+
+func (line Line) Count() int {
+	cnt := 0
+	for i := 0; i < len(line); i++ {
+		if line[i] {
+			cnt += 1
+		}
+	}
+	return cnt
 }
 
 func (line Line) IsEmpty() bool {
@@ -133,7 +143,7 @@ func NewBuffer(width, height int) Buffer {
 
 func (buf Buffer) Get(x, y int) bool {
 	if len(buf) <= y || 0 > y {
-		return true
+		return false
 	}
 	return buf[y].Get(x)
 }
@@ -224,4 +234,12 @@ func (buf Buffer) Flip() Buffer {
 		}
 	}
 	return nBuf
+}
+
+func (buf Buffer) Count() int {
+	cnt := 0
+	for i := 0; i < len(buf); i++ {
+		cnt += buf[i].Count()
+	}
+	return cnt
 }

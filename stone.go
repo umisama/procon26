@@ -17,6 +17,7 @@ func NewStoneBase(number int, input []string) (*StoneBase, error) {
 		number: number,
 		buffer: trimmedBuf,
 		rect:   rect,
+		count:  trimmedBuf.Count(),
 	}
 
 	m.createVariations()
@@ -27,6 +28,7 @@ type StoneBase struct {
 	number     int
 	buffer     Buffer
 	rect       Rect // A trimmed rect in input
+	count      int
 	variations []*Stone
 }
 
@@ -89,6 +91,7 @@ func (m *StoneBase) createVariations() {
 			buffer: buf,
 			rect:   rect,
 			dig:    i,
+			count:  m.count,
 		})
 		variations = append(variations, &Stone{
 			number:  m.number,
@@ -96,6 +99,7 @@ func (m *StoneBase) createVariations() {
 			rect:    rectF,
 			dig:     i,
 			flipped: true,
+			count:   m.count,
 		})
 
 		buf = buf.Rotate()
@@ -105,6 +109,10 @@ func (m *StoneBase) createVariations() {
 	}
 	m.variations = removeDuplicateItems(variations)
 	return
+}
+
+func (m *StoneBase) IsSquare() bool {
+	return m.count == m.rect.Width*m.rect.Height
 }
 
 func removeDuplicateItems(stones []*Stone) []*Stone {
@@ -130,6 +138,7 @@ type Stone struct {
 	rect    Rect
 	dig     int
 	flipped bool
+	count   int
 }
 
 func (m *Stone) Number() int {
@@ -146,6 +155,10 @@ func (m *Stone) Height() int {
 
 func (m *Stone) Width() int {
 	return m.rect.Width
+}
+
+func (m *Stone) Count() int {
+	return m.count
 }
 
 func (m *Stone) String() string {

@@ -5,10 +5,9 @@ import (
 )
 
 type Plan struct {
-	field       *Field
-	positions   []*Position
-	tmpPosition *Position // temporary position
-	numStone    int
+	field     *Field
+	positions []*Position
+	numStone  int
 }
 
 type Position struct {
@@ -31,7 +30,7 @@ func (position *Position) Get(x, y int) bool {
 func NewPlan(field *Field, numStone int) *Plan {
 	return &Plan{
 		field:     field,
-		positions: make([]*Position, 0),
+		positions: make([]*Position, 0, 32),
 		numStone:  numStone,
 	}
 }
@@ -49,26 +48,11 @@ func (plan *Plan) GetStoneDot(x, y int) bool {
 			return true
 		}
 	}
-	if plan.tmpPosition != nil && plan.tmpPosition.Get(x, y) {
-		return true
-	}
 	return false
 }
 
-func (plan *Plan) TestPut(x, y int, stone *Stone) bool {
-	if !plan.puttable(x, y, stone) {
-		return false
-	}
-	plan.tmpPosition = &Position{
-		x:     x,
-		y:     y,
-		stone: stone,
-	}
-	return true
-}
-
-func (plan *Plan) ClearTestStone() {
-	plan.tmpPosition = nil
+func (plan *Plan) Pop() {
+	plan.positions = plan.positions[0 : len(plan.positions)-1]
 }
 
 func (plan *Plan) Put(x, y int, stone *Stone) bool {
@@ -195,13 +179,9 @@ func (plan *Plan) Score() int {
 	if plan == nil {
 		return 0x8fffffff
 	}
-	score := 0
-	for x := 0; x < len(plan.field.buffer); x++ {
-		for y := 0; y < len(plan.field.buffer[0]); y++ {
-			if !plan.Get(x, y) {
-				score += 1
-			}
-		}
+	score := plan.field.buffer.Height()*plan.field.buffer.Width() - plan.field.buffer.Count()
+	for _, pos := range plan.positions {
+		score -= pos.stone.Count()
 	}
 	return score
 }
@@ -236,4 +216,8 @@ func (plan *Plan) PartialScoreByExistStones() int {
 		}
 	}
 	return score
+}
+
+func (plan *Plan) NumberOfPiece() int {
+	return len(plan.positions)
 }
