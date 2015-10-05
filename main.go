@@ -21,7 +21,7 @@ func main() {
 	pprof.StartCPUProfile(f)
 	defer pprof.StopCPUProfile()
 
-	game, err := NewGameMemo(os.Args[1], 1*time.Minute, 300)
+	game, err := NewGameMemo(os.Args[1], 10*time.Minute, 300)
 	if err != nil {
 		panic(err)
 	}

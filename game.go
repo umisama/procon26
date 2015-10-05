@@ -58,6 +58,9 @@ type BestMgr struct {
 func (b *BestMgr) Score() int {
 	b.mu.Lock()
 	defer b.mu.Unlock()
+	if b.best == nil {
+		return 0x8fffffff
+	}
 	return b.score
 }
 

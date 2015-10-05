@@ -35,6 +35,16 @@ func NewPlan(field *Field, numStone int) *Plan {
 	}
 }
 
+func (plan *Plan) Copy() *Plan {
+	pos := make([]*Position, len(plan.positions))
+	copy(pos, plan.positions)
+	return &Plan{
+		field:     plan.field,
+		positions: pos,
+		numStone:  plan.numStone,
+	}
+}
+
 func (plan *Plan) Get(x, y int) bool {
 	if plan.field.Get(x, y) {
 		return true
@@ -212,6 +222,22 @@ func (plan *Plan) PartialScoreByExistStones() int {
 				if !plan.Get(x, y) {
 					score += 1
 				}
+			}
+		}
+	}
+	return score
+}
+
+func (plan *Plan) CountIsolation() int {
+	score := 0
+	for x := 0; x < 32; x++ {
+		for y := 0; y < 32; y++ {
+			if !plan.Get(x, y) &&
+				plan.Get(x-1, y) &&
+				plan.Get(x+1, y) &&
+				plan.Get(x, y-1) &&
+				plan.Get(x, y+1) {
+				score += 1
 			}
 		}
 	}

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"math/rand"
 	"runtime"
 	"time"
 )
@@ -51,6 +50,7 @@ func (game *gameMemo) Algorithm() *Plan {
 		go func(queue chan Job, bestCandidates chan *Plan) {
 			for {
 				job := <-queue
+				println("(", job.X, job.Y, ") ->", best.Score())
 				bestCandidates <- game.algorithmCheckingPartialScore(job.X, job.Y, best.Score())
 			}
 		}(queue, bestCandidates)
@@ -65,6 +65,7 @@ func (game *gameMemo) Algorithm() *Plan {
 	// push jobs
 	end := make(chan struct{})
 	go func(queue chan Job) {
+		//for N := 0; N < game.Nmax; N++ {
 		for N := 0; N < game.Nmax; N++ {
 			for x := 0; x < 32; x++ {
 				for y := 0; y < 32; y++ {
@@ -94,7 +95,8 @@ func (game *gameMemo) algorithmCheckingPartialScore(x, y, score int) *Plan {
 		if !p.Put(x, y, fStone) {
 			continue
 		}
-		p = game.sub(score)
+		//p = game.sub(1, NewPlan(game.field, game.numStone), score)
+		p = game.sub(1, NewPlan(game.field, game.numStone), 1)
 		if p != nil && (best == nil || best.Score() > p.Score()) {
 			best = p
 		}
@@ -102,45 +104,70 @@ func (game *gameMemo) algorithmCheckingPartialScore(x, y, score int) *Plan {
 	return best
 }
 
-func (game *gameMemo) sub(latestBestScore int) *Plan {
-	p := NewPlan(game.field, game.numStone)
-	for it := 0; it < game.numStone; it++ {
-		type bestStoneCont struct {
-			stone *Stone
-			x, y  int
-		}
-		var bestStone []bestStoneCont
-		var bestScore = 0x8fffffff
-		sBase := game.stoneBase[it]
-		for x := 0; x < 32; x++ {
-			for y := 0; y < 32; y++ {
-				for _, stone := range sBase.GetVariations() {
-					if !p.Put(x, y, stone) {
-						continue
-					}
-					partialScore := p.PartialScoreByExistStones()
-					if bestScore > partialScore {
-						bestScore = partialScore
-						bestStone = []bestStoneCont{{stone, x, y}}
-					} else if bestScore == partialScore {
+func (game *gameMemo) sub(it int, p *Plan, latestBestScore int) *Plan {
+	if it >= game.numStone {
+		return p
+	}
+	if game.willBestScore(p, it) > latestBestScore {
+		return p
+	}
+
+	type bestStoneCont struct {
+		stone *Stone
+		x, y  int
+	}
+	var bestStone []bestStoneCont
+	var bestScore = 0x8fffffff
+	var bestIsolation = 0x8fffffff
+	sBase := game.stoneBase[it]
+	for x := 0; x < 32; x++ {
+		for y := 0; y < 32; y++ {
+			for _, stone := range sBase.GetVariations() {
+				if !p.Put(x, y, stone) {
+					continue
+				}
+				/*
+					if p.CountIsolation() == 0 {
 						bestStone = append(bestStone, bestStoneCont{stone, x, y})
 					}
-					p.Pop()
+				*/
+				pScore := p.PartialScoreByExistStones()
+				if pScore < bestScore {
+					bestStone = []bestStoneCont{{stone, x, y}}
+					bestScore = pScore
+					bestIsolation = p.CountIsolation()
+				} else if pScore == bestScore && bestIsolation > p.CountIsolation() {
+					bestStone = []bestStoneCont{{stone, x, y}}
+					bestScore = pScore
+					bestIsolation = p.CountIsolation()
+				} else if pScore == bestScore && bestIsolation == p.CountIsolation() {
+					bestStone = []bestStoneCont{{stone, x, y}}
 				}
+				p.Pop()
 			}
 		}
-
-		if len(bestStone) != 0 {
-			bestStoneI := bestStone[rand.Intn(len(bestStone))]
-			p.Put(bestStoneI.x, bestStoneI.y, bestStoneI.stone)
-		}
-		willBestScore := p.Score()
-		for i := it; i < game.numStone; i++ {
-			willBestScore -= game.stoneBase[i].count
-		}
-		if willBestScore > latestBestScore {
-			break
-		}
 	}
-	return p
+
+	var bestp *Plan
+	for _, bS := range bestStone {
+		pp := p.Copy()
+		pp.Put(bS.x, bS.y, bS.stone)
+		if candp := game.sub(it+1, pp, latestBestScore); bestp.Score() > candp.Score() {
+			bestp = candp
+		}
+		break
+	}
+	pp := p.Copy()
+	if candp := game.sub(it+1, pp, latestBestScore); bestp.Score() > candp.Score() {
+		bestp = candp
+	}
+	return bestp
+}
+
+func (game *gameMemo) willBestScore(p *Plan, it int) int {
+	willBestScore := p.Score()
+	for i := it; i < game.numStone; i++ {
+		willBestScore -= game.stoneBase[i].count
+	}
+	return willBestScore
 }
