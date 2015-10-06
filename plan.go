@@ -7,7 +7,9 @@ import (
 type Plan struct {
 	field     *Field
 	positions []*Position
-	numStone  int
+
+	buffer   Buffer
+	numStone int
 }
 
 type Position struct {
@@ -28,11 +30,14 @@ func (position *Position) Get(x, y int) bool {
 }
 
 func NewPlan(field *Field, numStone int) *Plan {
-	return &Plan{
+	p := &Plan{
 		field:     field,
 		positions: make([]*Position, 0, 32),
 		numStone:  numStone,
+		buffer:    NewBuffer(field.buffer.Width(), field.buffer.Height()),
 	}
+	p.refreshBuffer(Rect{0, 0, field.buffer.Height(), field.buffer.Width()})
+	return p
 }
 
 func (plan *Plan) Copy() *Plan {
@@ -42,14 +47,25 @@ func (plan *Plan) Copy() *Plan {
 		field:     plan.field,
 		positions: pos,
 		numStone:  plan.numStone,
+		buffer:    plan.buffer.Copy(),
 	}
 }
 
 func (plan *Plan) Get(x, y int) bool {
-	if plan.field.Get(x, y) {
-		return true
+	return plan.buffer.Get(x, y)
+}
+
+func (plan *Plan) strictGet(x, y int) bool {
+	return plan.field.Get(x, y) || plan.GetStoneDot(x, y)
+}
+
+func (plan *Plan) refreshBuffer(rect Rect) {
+	for x := rect.X; x < rect.X+rect.Width; x++ {
+		for y := rect.Y; y < rect.Y+rect.Height; y++ {
+			plan.buffer.Set(x, y, plan.strictGet(x, y))
+		}
 	}
-	return plan.GetStoneDot(x, y)
+	return
 }
 
 func (plan *Plan) GetStoneDot(x, y int) bool {
@@ -62,7 +78,10 @@ func (plan *Plan) GetStoneDot(x, y int) bool {
 }
 
 func (plan *Plan) Pop() {
+	pos := plan.positions[len(plan.positions)-1]
 	plan.positions = plan.positions[0 : len(plan.positions)-1]
+	plan.refreshBuffer(Rect{pos.x, pos.y, pos.stone.Height(), pos.stone.Width()})
+	return
 }
 
 func (plan *Plan) Put(x, y int, stone *Stone) bool {
@@ -75,14 +94,15 @@ func (plan *Plan) Put(x, y int, stone *Stone) bool {
 		y:     y,
 		stone: stone,
 	})
+	plan.refreshBuffer(Rect{x, y, stone.Height(), stone.Width()})
 	return true
 }
 
 func (plan *Plan) puttable(x, y int, stone *Stone) bool {
-	if plan.isDuplicateStone(stone) {
+	if !plan.canPutStone(x, y, stone) {
 		return false
 	}
-	if !plan.canPutStone(x, y, stone) {
+	if plan.isDuplicateStone(stone) {
 		return false
 	}
 	if !plan.isFirstStone() {

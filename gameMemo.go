@@ -1,6 +1,7 @@
 package main
 
 import (
+	"math/rand"
 	"runtime"
 	"time"
 )
@@ -95,8 +96,7 @@ func (game *gameMemo) algorithmCheckingPartialScore(x, y, score int) *Plan {
 		if !p.Put(x, y, fStone) {
 			continue
 		}
-		//p = game.sub(1, NewPlan(game.field, game.numStone), score)
-		p = game.sub(1, NewPlan(game.field, game.numStone), 1)
+		p = game.sub(1, p, score)
 		if p != nil && (best == nil || best.Score() > p.Score()) {
 			best = p
 		}
@@ -126,22 +126,19 @@ func (game *gameMemo) sub(it int, p *Plan, latestBestScore int) *Plan {
 				if !p.Put(x, y, stone) {
 					continue
 				}
-				/*
-					if p.CountIsolation() == 0 {
-						bestStone = append(bestStone, bestStoneCont{stone, x, y})
-					}
-				*/
 				pScore := p.PartialScoreByExistStones()
+				pIso := p.CountIsolation()
 				if pScore < bestScore {
 					bestStone = []bestStoneCont{{stone, x, y}}
 					bestScore = pScore
-					bestIsolation = p.CountIsolation()
-				} else if pScore == bestScore && bestIsolation > p.CountIsolation() {
-					bestStone = []bestStoneCont{{stone, x, y}}
-					bestScore = pScore
-					bestIsolation = p.CountIsolation()
-				} else if pScore == bestScore && bestIsolation == p.CountIsolation() {
-					bestStone = []bestStoneCont{{stone, x, y}}
+					bestIsolation = pIso
+				} else if pScore == bestScore {
+					if bestIsolation > pIso {
+						bestStone = []bestStoneCont{{stone, x, y}}
+						bestIsolation = pIso
+					} else if bestIsolation == pIso {
+						bestStone = append(bestStone, bestStoneCont{stone, x, y})
+					}
 				}
 				p.Pop()
 			}
@@ -149,17 +146,17 @@ func (game *gameMemo) sub(it int, p *Plan, latestBestScore int) *Plan {
 	}
 
 	var bestp *Plan
-	for _, bS := range bestStone {
+	if len(bestStone) != 0 {
+		bS := bestStone[rand.Intn(len(bestStone))]
 		pp := p.Copy()
 		pp.Put(bS.x, bS.y, bS.stone)
 		if candp := game.sub(it+1, pp, latestBestScore); bestp.Score() > candp.Score() {
 			bestp = candp
 		}
-		break
 	}
-	pp := p.Copy()
-	if candp := game.sub(it+1, pp, latestBestScore); bestp.Score() > candp.Score() {
-		bestp = candp
+	if len(bestStone) == 0 {
+		pp := p.Copy()
+		bestp = game.sub(it+1, pp, latestBestScore)
 	}
 	return bestp
 }

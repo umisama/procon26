@@ -82,7 +82,6 @@ func (b *BestMgr) set(candidate *Plan) {
 	b.best = candidate
 	b.score = b.best.Score()
 	b.numOfPiece = b.best.NumberOfPiece()
-	println(b.score, b.numOfPiece)
 }
 
 func (b *BestMgr) Get() *Plan {

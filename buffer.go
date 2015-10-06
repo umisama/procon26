@@ -50,9 +50,17 @@ func NewLine(length int) Line {
 
 func (line Line) Get(x int) bool {
 	if len(line) <= x || 0 > x {
-		return false
+		return true
 	}
 	return line[x]
+}
+
+func (line Line) Set(x int, val bool) {
+	if len(line) <= x || 0 > x {
+		return
+	}
+	line[x] = val
+	return
 }
 
 func (line Line) GetRange() (start, end int) {
@@ -143,9 +151,17 @@ func NewBuffer(width, height int) Buffer {
 
 func (buf Buffer) Get(x, y int) bool {
 	if len(buf) <= y || 0 > y {
-		return false
+		return true
 	}
 	return buf[y].Get(x)
+}
+
+func (buf Buffer) Set(x, y int, val bool) {
+	if len(buf) <= y || 0 > y {
+		return
+	}
+	buf[y].Set(x, val)
+	return
 }
 
 func (buf Buffer) GetRect() Rect {
@@ -242,4 +258,14 @@ func (buf Buffer) Count() int {
 		cnt += buf[i].Count()
 	}
 	return cnt
+}
+
+func (buf Buffer) Copy() Buffer {
+	nbuf := make(Buffer, buf.Height())
+	for y, line := range buf {
+		nline := make(Line, len(line))
+		copy(nline, line)
+		nbuf[y] = line
+	}
+	return nbuf
 }

@@ -53,6 +53,7 @@ func TestPlanGet(t *testing.T) {
 		m: &Plan{
 			field:     field,
 			positions: nil,
+			buffer:    NewBuffer(32, 32),
 		},
 		inputX: 0, inputY: 0,
 		expect: false,
@@ -61,13 +62,15 @@ func TestPlanGet(t *testing.T) {
 		m: &Plan{
 			field:     field,
 			positions: nil,
+			buffer:    NewBuffer(32, 32),
 		},
 		inputX: 2, inputY: 2,
 		expect: true,
 	}, {
 		title: "returns true if dot exists in stone.(1)",
 		m: &Plan{
-			field: field,
+			field:  field,
+			buffer: NewBuffer(32, 32),
 			positions: []*Position{{
 				x: 0, y: 0,
 				stone: &Stone{
@@ -86,7 +89,8 @@ func TestPlanGet(t *testing.T) {
 	}, {
 		title: "returns true if dot exists in stone.(2)",
 		m: &Plan{
-			field: field,
+			field:  field,
+			buffer: NewBuffer(32, 32),
 			positions: []*Position{{
 				x: 0, y: 0,
 				stone: &Stone{
@@ -105,7 +109,8 @@ func TestPlanGet(t *testing.T) {
 	}, {
 		title: "returns false if dot don't exists in stone and field.(1)",
 		m: &Plan{
-			field: field,
+			field:  field,
+			buffer: NewBuffer(32, 32),
 			positions: []*Position{{
 				x: 0, y: 0,
 				stone: &Stone{
@@ -124,7 +129,8 @@ func TestPlanGet(t *testing.T) {
 	}, {
 		title: "returns false if dot don't exists in stone and field.(2)",
 		m: &Plan{
-			field: field,
+			field:  field,
+			buffer: NewBuffer(32, 32),
 			positions: []*Position{{
 				x: 0, y: 0,
 				stone: &Stone{
@@ -144,6 +150,7 @@ func TestPlanGet(t *testing.T) {
 
 	for _, c := range cases {
 		t.Log("start: ", c.title)
+		c.m.refreshBuffer(Rect{0, 0, 32, 32})
 		if c.m.Get(c.inputX, c.inputY) != c.expect {
 			t.Error("failed")
 		}
@@ -199,6 +206,7 @@ func TestPlanPut(t *testing.T) {
 		title: "allow if plan is empty",
 		m: &Plan{
 			field:     field,
+			buffer:    NewBuffer(32, 32),
 			positions: nil,
 		},
 		stone: &Stone{
@@ -215,7 +223,8 @@ func TestPlanPut(t *testing.T) {
 	}, {
 		title: "allow if there is not duplicated stone",
 		m: &Plan{
-			field: field,
+			field:  field,
+			buffer: NewBuffer(32, 32),
 			positions: []*Position{{
 				x: 0, y: 0,
 				stone: &Stone{
@@ -245,7 +254,8 @@ func TestPlanPut(t *testing.T) {
 	}, {
 		title: "deny if there is not duplicated stone(layerd)",
 		m: &Plan{
-			field: field,
+			field:  field,
+			buffer: NewBuffer(32, 32),
 			positions: []*Position{{
 				x: 0, y: 0,
 				stone: &Stone{
@@ -275,7 +285,8 @@ func TestPlanPut(t *testing.T) {
 	}, {
 		title: "allow if there is not duplicated stone(layerd)",
 		m: &Plan{
-			field: field,
+			field:  field,
+			buffer: NewBuffer(32, 32),
 			positions: []*Position{{
 				x: 0, y: 0,
 				stone: &Stone{
@@ -305,7 +316,8 @@ func TestPlanPut(t *testing.T) {
 	}, {
 		title: "deny if there is not related stone.",
 		m: &Plan{
-			field: field,
+			field:  field,
+			buffer: NewBuffer(32, 32),
 			positions: []*Position{{
 				x: 0, y: 0,
 				stone: &Stone{
@@ -335,6 +347,7 @@ func TestPlanPut(t *testing.T) {
 	}}
 	for _, c := range cases {
 		t.Log("start: ", c.title)
+		c.m.refreshBuffer(Rect{0, 0, 32, 32})
 		if c.m.Put(c.inputX, c.inputY, c.stone) != c.expect {
 			t.Error("failed")
 		}
@@ -383,7 +396,8 @@ func TestPlanPartialScoreByExistStones(t *testing.T) {
 	}{{
 		title: "No.1",
 		m: &Plan{
-			field: field,
+			field:  field,
+			buffer: NewBuffer(32, 32),
 			positions: []*Position{{
 				x: 0, y: 0,
 				stone: &Stone{
@@ -402,7 +416,8 @@ func TestPlanPartialScoreByExistStones(t *testing.T) {
 	}, {
 		title: "No.2",
 		m: &Plan{
-			field: field,
+			field:  field,
+			buffer: NewBuffer(32, 32),
 			positions: []*Position{{
 				x: 0, y: 0,
 				stone: &Stone{
@@ -432,6 +447,7 @@ func TestPlanPartialScoreByExistStones(t *testing.T) {
 		expect: 2,
 	}}
 	for _, c := range cases {
+		c.m.refreshBuffer(Rect{0, 0, 32, 32})
 		v := c.m.PartialScoreByExistStones()
 		if v != c.expect {
 			t.Error("failed: got:", v, " expect:", c.expect)
@@ -481,7 +497,8 @@ func TestPlanCountIsolation(t *testing.T) {
 	}{{
 		title: "No.1",
 		m: &Plan{
-			field: field,
+			field:  field,
+			buffer: NewBuffer(32, 32),
 			positions: []*Position{{
 				x: 0, y: 0,
 				stone: &Stone{
@@ -500,7 +517,8 @@ func TestPlanCountIsolation(t *testing.T) {
 	}, {
 		title: "No.2",
 		m: &Plan{
-			field: field,
+			field:  field,
+			buffer: NewBuffer(32, 32),
 			positions: []*Position{{
 				x: 0, y: 0,
 				stone: &Stone{
@@ -532,6 +550,7 @@ func TestPlanCountIsolation(t *testing.T) {
 	}}
 	for _, c := range cases {
 		t.Log("start: ", c.title)
+		c.m.refreshBuffer(Rect{0, 0, 32, 32})
 		v := c.m.CountIsolation()
 		if c.expect != v {
 			t.Error("failed")
@@ -577,8 +596,10 @@ func BenchmarkPlanScore(b *testing.B) {
 	plan := &Plan{
 		field:     field,
 		positions: nil,
+		buffer:    NewBuffer(32, 32),
 	}
 	for i := 0; i < b.N; i++ {
+		plan.refreshBuffer(Rect{0, 0, 32, 32})
 		plan.Score()
 	}
 }
