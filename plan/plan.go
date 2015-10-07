@@ -1,20 +1,22 @@
-package main
+package plan
 
 import (
 	"fmt"
+	"github.com/umisama/procon26/buffer"
+	"github.com/umisama/procon26/materials"
 )
 
 type Plan struct {
-	field     *Field
+	field     *materials.Field
 	positions []*Position
 
-	buffer   Buffer
+	buffer   buffer.Buffer
 	numStone int
 }
 
 type Position struct {
 	x, y  int
-	stone *Stone
+	stone *materials.Stone
 }
 
 func (position *Position) Get(x, y int) bool {
@@ -29,14 +31,14 @@ func (position *Position) Get(x, y int) bool {
 	return position.stone.Get(posx, posy)
 }
 
-func NewPlan(field *Field, numStone int) *Plan {
+func NewPlan(field *materials.Field, numStone int) *Plan {
 	p := &Plan{
 		field:     field,
 		positions: make([]*Position, 0, 32),
 		numStone:  numStone,
-		buffer:    NewBuffer(field.buffer.Width(), field.buffer.Height()),
+		buffer:    buffer.NewBuffer(field.Width(), field.Height()),
 	}
-	p.refreshBuffer(Rect{0, 0, field.buffer.Height(), field.buffer.Width()})
+	p.refreshBuffer(buffer.Rect{0, 0, field.Height(), field.Width()})
 	return p
 }
 
@@ -59,7 +61,7 @@ func (plan *Plan) strictGet(x, y int) bool {
 	return plan.field.Get(x, y) || plan.GetStoneDot(x, y)
 }
 
-func (plan *Plan) refreshBuffer(rect Rect) {
+func (plan *Plan) refreshBuffer(rect buffer.Rect) {
 	for x := rect.X; x < rect.X+rect.Width; x++ {
 		for y := rect.Y; y < rect.Y+rect.Height; y++ {
 			plan.buffer.Set(x, y, plan.strictGet(x, y))
@@ -80,11 +82,11 @@ func (plan *Plan) GetStoneDot(x, y int) bool {
 func (plan *Plan) Pop() {
 	pos := plan.positions[len(plan.positions)-1]
 	plan.positions = plan.positions[0 : len(plan.positions)-1]
-	plan.refreshBuffer(Rect{pos.x, pos.y, pos.stone.Height(), pos.stone.Width()})
+	plan.refreshBuffer(buffer.Rect{pos.x, pos.y, pos.stone.Height(), pos.stone.Width()})
 	return
 }
 
-func (plan *Plan) Put(x, y int, stone *Stone) bool {
+func (plan *Plan) Put(x, y int, stone *materials.Stone) bool {
 	if !plan.puttable(x, y, stone) {
 		return false
 	}
@@ -94,11 +96,11 @@ func (plan *Plan) Put(x, y int, stone *Stone) bool {
 		y:     y,
 		stone: stone,
 	})
-	plan.refreshBuffer(Rect{x, y, stone.Height(), stone.Width()})
+	plan.refreshBuffer(buffer.Rect{x, y, stone.Height(), stone.Width()})
 	return true
 }
 
-func (plan *Plan) puttable(x, y int, stone *Stone) bool {
+func (plan *Plan) puttable(x, y int, stone *materials.Stone) bool {
 	if !plan.canPutStone(x, y, stone) {
 		return false
 	}
@@ -113,7 +115,7 @@ func (plan *Plan) puttable(x, y int, stone *Stone) bool {
 	return true
 }
 
-func (plan *Plan) isDuplicateStone(stone *Stone) bool {
+func (plan *Plan) isDuplicateStone(stone *materials.Stone) bool {
 	for _, pos := range plan.positions {
 		if pos.stone.Number() == stone.Number() {
 			return true
@@ -122,7 +124,7 @@ func (plan *Plan) isDuplicateStone(stone *Stone) bool {
 	return false
 }
 
-func (plan *Plan) canPutStone(x, y int, stone *Stone) bool {
+func (plan *Plan) canPutStone(x, y int, stone *materials.Stone) bool {
 	for stoneX := 0; stoneX < stone.Width(); stoneX++ {
 		for stoneY := 0; stoneY < stone.Height(); stoneY++ {
 			if !stone.Get(stoneX, stoneY) {
@@ -140,7 +142,7 @@ func (plan *Plan) isFirstStone() bool {
 	return len(plan.positions) == 0
 }
 
-func (plan *Plan) isExistRelatedStone(x, y int, stone *Stone) bool {
+func (plan *Plan) isExistRelatedStone(x, y int, stone *materials.Stone) bool {
 	for stoneX := 0; stoneX < stone.Width(); stoneX++ {
 		for stoneY := 0; stoneY < stone.Height(); stoneY++ {
 			if !stone.Get(stoneX, stoneY) {
@@ -158,9 +160,7 @@ func (plan *Plan) isExistRelatedStone(x, y int, stone *Stone) bool {
 }
 
 func (plan *Plan) String() string {
-	str := ""
-
-	first := false
+	str, first := "", false
 	for i := 0; i < plan.numStone; i++ {
 		if !first {
 			first = true
@@ -175,30 +175,21 @@ func (plan *Plan) String() string {
 		}
 		stone := position.stone
 
-		str += fmt.Sprintf("%d %d ", position.x-stone.rect.X, position.y-stone.rect.Y)
-		if stone.flipped {
+		str += fmt.Sprintf("%d %d ", position.x-stone.Rect().X, position.y-stone.Rect().Y)
+		if stone.IsFlipped() {
 			str += "T "
 		} else {
 			str += "H "
 		}
-
-		switch stone.dig {
-		case 0:
-			str += "0"
-		case 1:
-			str += "270"
-		case 2:
-			str += "180"
-		case 3:
-			str += "90"
-		}
+		str += fmt.Sprintf("%d", stone.Dig())
 	}
+	str += "\n"
 	return str
 }
 
 func (plan *Plan) findPositionByStoneNumber(num int) *Position {
 	for _, position := range plan.positions {
-		if position.stone.number == num {
+		if position.stone.Number() == num {
 			return position
 		}
 	}
@@ -209,14 +200,14 @@ func (plan *Plan) Score() int {
 	if plan == nil {
 		return 0x8fffffff
 	}
-	score := plan.field.buffer.Height()*plan.field.buffer.Width() - plan.field.buffer.Count()
+	score := plan.field.Height()*plan.field.Width() - plan.field.Count()
 	for _, pos := range plan.positions {
 		score -= pos.stone.Count()
 	}
 	return score
 }
 
-func (plan *Plan) PartialScore(rect Rect) int {
+func (plan *Plan) PartialScore(rect buffer.Rect) int {
 	if plan == nil {
 		return 0x8fffffff
 	}

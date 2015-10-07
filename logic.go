@@ -1,25 +1,23 @@
 package main
 
 import (
+	"github.com/umisama/procon26/materials"
+	"github.com/umisama/procon26/plan"
 	"math/rand"
 	"runtime"
 	"time"
 )
 
 type gameMemo struct {
-	field     *Field
-	stoneBase []*StoneBase
+	field     *materials.Field
+	stoneBase []*materials.StoneBase
 	numStone  int
 
 	limit time.Duration
 	Nmax  int
 }
 
-func NewGameMemo(path string, limit time.Duration, Nmax int) (Game, error) {
-	lines, err := getLinesFromFile(path)
-	if err != nil {
-		return nil, err
-	}
+func NewGameMemo(lines []string, limit time.Duration, Nmax int) (Game, error) {
 	field, stoneBase, err := readGameMaterials(lines)
 	if err != nil {
 		return nil, err
@@ -34,11 +32,11 @@ func NewGameMemo(path string, limit time.Duration, Nmax int) (Game, error) {
 	}, nil
 }
 
-func (game *gameMemo) Run() *Plan {
+func (game *gameMemo) Run() *plan.Plan {
 	return game.Algorithm()
 }
 
-func (game *gameMemo) Algorithm() *Plan {
+func (game *gameMemo) Algorithm() *plan.Plan {
 	var best BestMgr
 
 	type Job struct {
@@ -46,9 +44,9 @@ func (game *gameMemo) Algorithm() *Plan {
 		Y int
 	}
 	queue := make(chan Job)
-	bestCandidates := make(chan *Plan)
+	bestCandidates := make(chan *plan.Plan)
 	for i := 0; i < runtime.NumCPU(); i++ {
-		go func(queue chan Job, bestCandidates chan *Plan) {
+		go func(queue chan Job, bestCandidates chan *plan.Plan) {
 			for {
 				job := <-queue
 				println("(", job.X, job.Y, ") ->", best.Score())
@@ -56,7 +54,7 @@ func (game *gameMemo) Algorithm() *Plan {
 			}
 		}(queue, bestCandidates)
 	}
-	go func(candidates chan *Plan) {
+	go func(candidates chan *plan.Plan) {
 		for {
 			candidate := <-candidates
 			best.Set(candidate)
@@ -66,7 +64,6 @@ func (game *gameMemo) Algorithm() *Plan {
 	// push jobs
 	end := make(chan struct{})
 	go func(queue chan Job) {
-		//for N := 0; N < game.Nmax; N++ {
 		for N := 0; N < game.Nmax; N++ {
 			for x := 0; x < 32; x++ {
 				for y := 0; y < 32; y++ {
@@ -89,10 +86,10 @@ func (game *gameMemo) Algorithm() *Plan {
 	return best.Get()
 }
 
-func (game *gameMemo) algorithmCheckingPartialScore(x, y, score int) *Plan {
-	var best *Plan
+func (game *gameMemo) algorithmCheckingPartialScore(x, y, score int) *plan.Plan {
+	var best *plan.Plan
 	for _, fStone := range game.stoneBase[0].GetVariations() {
-		p := NewPlan(game.field, game.numStone)
+		p := plan.NewPlan(game.field, game.numStone)
 		if !p.Put(x, y, fStone) {
 			continue
 		}
@@ -104,7 +101,7 @@ func (game *gameMemo) algorithmCheckingPartialScore(x, y, score int) *Plan {
 	return best
 }
 
-func (game *gameMemo) sub(it int, p *Plan, latestBestScore int) *Plan {
+func (game *gameMemo) sub(it int, p *plan.Plan, latestBestScore int) *plan.Plan {
 	if it >= game.numStone {
 		return p
 	}
@@ -113,7 +110,7 @@ func (game *gameMemo) sub(it int, p *Plan, latestBestScore int) *Plan {
 	}
 
 	type bestStoneCont struct {
-		stone *Stone
+		stone *materials.Stone
 		x, y  int
 	}
 	var bestStone []bestStoneCont
@@ -145,10 +142,20 @@ func (game *gameMemo) sub(it int, p *Plan, latestBestScore int) *Plan {
 		}
 	}
 
-	var bestp *Plan
+	var bestp *plan.Plan
+	if bestIsolation-p.CountIsolation() > 0 && bestIsolation != 0x8fffffff && it < 50 {
+		pp := p.Copy()
+		bestp = game.sub(it+1, pp, latestBestScore)
+	}
 	if len(bestStone) != 0 {
 		bS := bestStone[rand.Intn(len(bestStone))]
 		pp := p.Copy()
+		pp.Put(bS.x, bS.y, bS.stone)
+		if candp := game.sub(it+1, pp, latestBestScore); bestp.Score() > candp.Score() {
+			bestp = candp
+		}
+		bS = bestStone[rand.Intn(len(bestStone))]
+		pp = p.Copy()
 		pp.Put(bS.x, bS.y, bS.stone)
 		if candp := game.sub(it+1, pp, latestBestScore); bestp.Score() > candp.Score() {
 			bestp = candp
@@ -161,10 +168,10 @@ func (game *gameMemo) sub(it int, p *Plan, latestBestScore int) *Plan {
 	return bestp
 }
 
-func (game *gameMemo) willBestScore(p *Plan, it int) int {
+func (game *gameMemo) willBestScore(p *plan.Plan, it int) int {
 	willBestScore := p.Score()
 	for i := it; i < game.numStone; i++ {
-		willBestScore -= game.stoneBase[i].count
+		willBestScore -= game.stoneBase[i].Count()
 	}
 	return willBestScore
 }

@@ -1,11 +1,13 @@
-package main
+package plan
 
 import (
+	"github.com/umisama/procon26/buffer"
+	"github.com/umisama/procon26/materials"
 	"testing"
 )
 
 func TestPlanGet(t *testing.T) {
-	field, err := NewField([]string{
+	field, err := materials.NewField([]string{
 		"00000000000000001111111111111111",
 		"00000000000000001111111111111111",
 		"00100000000000001111111111111111",
@@ -53,7 +55,7 @@ func TestPlanGet(t *testing.T) {
 		m: &Plan{
 			field:     field,
 			positions: nil,
-			buffer:    NewBuffer(32, 32),
+			buffer:    buffer.NewBuffer(32, 32),
 		},
 		inputX: 0, inputY: 0,
 		expect: false,
@@ -62,7 +64,7 @@ func TestPlanGet(t *testing.T) {
 		m: &Plan{
 			field:     field,
 			positions: nil,
-			buffer:    NewBuffer(32, 32),
+			buffer:    buffer.NewBuffer(32, 32),
 		},
 		inputX: 2, inputY: 2,
 		expect: true,
@@ -70,18 +72,13 @@ func TestPlanGet(t *testing.T) {
 		title: "returns true if dot exists in stone.(1)",
 		m: &Plan{
 			field:  field,
-			buffer: NewBuffer(32, 32),
+			buffer: buffer.NewBuffer(32, 32),
 			positions: []*Position{{
 				x: 0, y: 0,
-				stone: &Stone{
-					buffer: Buffer{
-						{true, false},
-						{true, true},
-					},
-					rect:    Rect{X: 1, Y: 0, Width: 2, Height: 2},
-					dig:     0,
-					flipped: false,
-				},
+				stone: materials.NewStone(0, buffer.Buffer{
+					{true, false},
+					{true, true},
+				}),
 			}},
 		},
 		inputX: 0, inputY: 0,
@@ -90,18 +87,13 @@ func TestPlanGet(t *testing.T) {
 		title: "returns true if dot exists in stone.(2)",
 		m: &Plan{
 			field:  field,
-			buffer: NewBuffer(32, 32),
+			buffer: buffer.NewBuffer(32, 32),
 			positions: []*Position{{
 				x: 0, y: 0,
-				stone: &Stone{
-					buffer: Buffer{
-						{true, false},
-						{true, true},
-					},
-					rect:    Rect{X: 1, Y: 0, Width: 2, Height: 2},
-					dig:     0,
-					flipped: false,
-				},
+				stone: materials.NewStone(0, buffer.Buffer{
+					{true, false},
+					{true, true},
+				}),
 			}},
 		},
 		inputX: 1, inputY: 1,
@@ -110,18 +102,13 @@ func TestPlanGet(t *testing.T) {
 		title: "returns false if dot don't exists in stone and field.(1)",
 		m: &Plan{
 			field:  field,
-			buffer: NewBuffer(32, 32),
+			buffer: buffer.NewBuffer(32, 32),
 			positions: []*Position{{
 				x: 0, y: 0,
-				stone: &Stone{
-					buffer: Buffer{
-						{true, false},
-						{true, true},
-					},
-					rect:    Rect{X: 1, Y: 0, Width: 2, Height: 2},
-					dig:     0,
-					flipped: false,
-				},
+				stone: materials.NewStone(0, buffer.Buffer{
+					{true, false},
+					{true, true},
+				}),
 			}},
 		},
 		inputX: 1, inputY: 0,
@@ -130,18 +117,13 @@ func TestPlanGet(t *testing.T) {
 		title: "returns false if dot don't exists in stone and field.(2)",
 		m: &Plan{
 			field:  field,
-			buffer: NewBuffer(32, 32),
+			buffer: buffer.NewBuffer(32, 32),
 			positions: []*Position{{
 				x: 0, y: 0,
-				stone: &Stone{
-					buffer: Buffer{
-						{true, false},
-						{true, true},
-					},
-					rect:    Rect{X: 1, Y: 0, Width: 2, Height: 2},
-					dig:     0,
-					flipped: false,
-				},
+				stone: materials.NewStone(0, buffer.Buffer{
+					{true, false},
+					{true, true},
+				}),
 			}},
 		},
 		inputX: 3, inputY: 1,
@@ -150,7 +132,7 @@ func TestPlanGet(t *testing.T) {
 
 	for _, c := range cases {
 		t.Log("start: ", c.title)
-		c.m.refreshBuffer(Rect{0, 0, 32, 32})
+		c.m.refreshBuffer(buffer.Rect{0, 0, 32, 32})
 		if c.m.Get(c.inputX, c.inputY) != c.expect {
 			t.Error("failed")
 		}
@@ -158,7 +140,7 @@ func TestPlanGet(t *testing.T) {
 }
 
 func TestPlanPut(t *testing.T) {
-	field, err := NewField([]string{
+	field, err := materials.NewField([]string{
 		"00000000000000001111111111111111",
 		"00000000000000001111111111111111",
 		"00100000000000001111111111111111",
@@ -199,155 +181,102 @@ func TestPlanPut(t *testing.T) {
 	cases := []struct {
 		title          string
 		m              *Plan
-		stone          *Stone
+		stone          *materials.Stone
 		inputX, inputY int
 		expect         bool
 	}{{
 		title: "allow if plan is empty",
 		m: &Plan{
 			field:     field,
-			buffer:    NewBuffer(32, 32),
+			buffer:    buffer.NewBuffer(32, 32),
 			positions: nil,
 		},
-		stone: &Stone{
-			buffer: Buffer{
-				{true, false},
-				{true, true},
-			},
-			rect:    Rect{X: 1, Y: 0, Width: 2, Height: 2},
-			dig:     0,
-			flipped: false,
-		},
+		stone: materials.NewStone(0, buffer.Buffer{
+			{true, false},
+			{true, true},
+		}),
 		inputX: 0, inputY: 0,
 		expect: true,
 	}, {
 		title: "allow if there is not duplicated stone",
 		m: &Plan{
 			field:  field,
-			buffer: NewBuffer(32, 32),
+			buffer: buffer.NewBuffer(32, 32),
 			positions: []*Position{{
 				x: 0, y: 0,
-				stone: &Stone{
-					number: 1,
-					buffer: Buffer{
-						{true, false},
-						{true, true},
-					},
-					rect:    Rect{X: 1, Y: 0, Width: 2, Height: 2},
-					dig:     0,
-					flipped: false,
-				},
+				stone: materials.NewStone(0, buffer.Buffer{
+					{true, false},
+					{true, true},
+				}),
 			}},
 		},
-		stone: &Stone{
-			number: 2,
-			buffer: Buffer{
-				{true, false},
-				{true, true},
-			},
-			rect:    Rect{X: 1, Y: 0, Width: 2, Height: 2},
-			dig:     0,
-			flipped: false,
-		},
+		stone: materials.NewStone(1, buffer.Buffer{
+			{true, false},
+			{true, true},
+		}),
 		inputX: 2, inputY: 0,
 		expect: true,
 	}, {
 		title: "deny if there is not duplicated stone(layerd)",
 		m: &Plan{
 			field:  field,
-			buffer: NewBuffer(32, 32),
+			buffer: buffer.NewBuffer(32, 32),
 			positions: []*Position{{
 				x: 0, y: 0,
-				stone: &Stone{
-					number: 1,
-					buffer: Buffer{
-						{true, false},
-						{true, true},
-					},
-					rect:    Rect{X: 0, Y: 0, Width: 2, Height: 2},
-					dig:     0,
-					flipped: false,
-				},
+				stone: materials.NewStone(1, buffer.Buffer{
+					{true, false},
+					{true, true},
+				}),
 			}},
 		},
-		stone: &Stone{
-			number: 2,
-			buffer: Buffer{
-				{true, true},
-				{false, true},
-			},
-			rect:    Rect{X: 0, Y: 0, Width: 2, Height: 2},
-			dig:     0,
-			flipped: false,
-		},
+		stone: materials.NewStone(2, buffer.Buffer{
+			{true, true},
+			{false, true},
+		}),
 		inputX: 1, inputY: 0,
 		expect: true,
 	}, {
 		title: "allow if there is not duplicated stone(layerd)",
 		m: &Plan{
 			field:  field,
-			buffer: NewBuffer(32, 32),
+			buffer: buffer.NewBuffer(32, 32),
 			positions: []*Position{{
 				x: 0, y: 0,
-				stone: &Stone{
-					number: 1,
-					buffer: Buffer{
-						{true, false},
-						{true, true},
-					},
-					rect:    Rect{X: 0, Y: 0, Width: 2, Height: 2},
-					dig:     0,
-					flipped: false,
-				},
+				stone: materials.NewStone(1, buffer.Buffer{
+					{true, false},
+					{true, true},
+				}),
 			}},
 		},
-		stone: &Stone{
-			number: 2,
-			buffer: Buffer{
-				{true, true},
-				{false, true},
-			},
-			rect:    Rect{X: 0, Y: 0, Width: 2, Height: 2},
-			dig:     0,
-			flipped: false,
-		},
+		stone: materials.NewStone(2, buffer.Buffer{
+			{true, true},
+			{false, true},
+		}),
 		inputX: 1, inputY: 0,
 		expect: true,
 	}, {
 		title: "deny if there is not related stone.",
 		m: &Plan{
 			field:  field,
-			buffer: NewBuffer(32, 32),
+			buffer: buffer.NewBuffer(32, 32),
 			positions: []*Position{{
 				x: 0, y: 0,
-				stone: &Stone{
-					number: 1,
-					buffer: Buffer{
-						{true, false},
-						{true, true},
-					},
-					rect:    Rect{X: 0, Y: 0, Width: 2, Height: 2},
-					dig:     0,
-					flipped: false,
-				},
+				stone: materials.NewStone(1, buffer.Buffer{
+					{true, false},
+					{true, true},
+				}),
 			}},
 		},
-		stone: &Stone{
-			number: 2,
-			buffer: Buffer{
-				{false, true},
-				{true, true},
-			},
-			rect:    Rect{X: 0, Y: 0, Width: 2, Height: 2},
-			dig:     0,
-			flipped: false,
-		},
+		stone: materials.NewStone(2, buffer.Buffer{
+			{false, true},
+			{true, true},
+		}),
 		inputX: 2, inputY: 2,
 		expect: false,
 	}}
 	for _, c := range cases {
 		t.Log("start: ", c.title)
-		c.m.refreshBuffer(Rect{0, 0, 32, 32})
+		c.m.refreshBuffer(buffer.Rect{0, 0, 32, 32})
 		if c.m.Put(c.inputX, c.inputY, c.stone) != c.expect {
 			t.Error("failed")
 		}
@@ -355,7 +284,7 @@ func TestPlanPut(t *testing.T) {
 }
 
 func TestPlanPartialScoreByExistStones(t *testing.T) {
-	field, _ := NewField([]string{
+	field, _ := materials.NewField([]string{
 		"00000000000000001111111111111111",
 		"00000000000000001111111111111111",
 		"00100000000000001111111111111111",
@@ -397,19 +326,13 @@ func TestPlanPartialScoreByExistStones(t *testing.T) {
 		title: "No.1",
 		m: &Plan{
 			field:  field,
-			buffer: NewBuffer(32, 32),
+			buffer: buffer.NewBuffer(32, 32),
 			positions: []*Position{{
 				x: 0, y: 0,
-				stone: &Stone{
-					number: 1,
-					buffer: Buffer{
-						{true, false},
-						{true, true},
-					},
-					rect:    Rect{X: 1, Y: 0, Width: 2, Height: 2},
-					dig:     0,
-					flipped: false,
-				},
+				stone: materials.NewStone(0, buffer.Buffer{
+					{true, false},
+					{true, true},
+				}),
 			}},
 		},
 		expect: 1,
@@ -417,37 +340,25 @@ func TestPlanPartialScoreByExistStones(t *testing.T) {
 		title: "No.2",
 		m: &Plan{
 			field:  field,
-			buffer: NewBuffer(32, 32),
+			buffer: buffer.NewBuffer(32, 32),
 			positions: []*Position{{
 				x: 0, y: 0,
-				stone: &Stone{
-					number: 1,
-					buffer: Buffer{
-						{true, false},
-						{true, true},
-					},
-					rect:    Rect{X: 1, Y: 0, Width: 2, Height: 2},
-					dig:     0,
-					flipped: false,
-				},
+				stone: materials.NewStone(0, buffer.Buffer{
+					{true, false},
+					{true, true},
+				}),
 			}, {
 				x: 2, y: 0,
-				stone: &Stone{
-					number: 1,
-					buffer: Buffer{
-						{true, false},
-						{true, true},
-					},
-					rect:    Rect{X: 1, Y: 0, Width: 2, Height: 2},
-					dig:     0,
-					flipped: false,
-				},
+				stone: materials.NewStone(1, buffer.Buffer{
+					{true, false},
+					{true, true},
+				}),
 			}},
 		},
 		expect: 2,
 	}}
 	for _, c := range cases {
-		c.m.refreshBuffer(Rect{0, 0, 32, 32})
+		c.m.refreshBuffer(buffer.Rect{0, 0, 32, 32})
 		v := c.m.PartialScoreByExistStones()
 		if v != c.expect {
 			t.Error("failed: got:", v, " expect:", c.expect)
@@ -456,7 +367,7 @@ func TestPlanPartialScoreByExistStones(t *testing.T) {
 }
 
 func TestPlanCountIsolation(t *testing.T) {
-	field, _ := NewField([]string{
+	field, _ := materials.NewField([]string{
 		"00000000000000001111111111111111",
 		"00000000000000001111111111111111",
 		"00100000000000001111111111111111",
@@ -498,19 +409,13 @@ func TestPlanCountIsolation(t *testing.T) {
 		title: "No.1",
 		m: &Plan{
 			field:  field,
-			buffer: NewBuffer(32, 32),
+			buffer: buffer.NewBuffer(32, 32),
 			positions: []*Position{{
 				x: 0, y: 0,
-				stone: &Stone{
-					number: 1,
-					buffer: Buffer{
-						{true, false, true},
-						{true, true, true},
-					},
-					rect:    Rect{X: 0, Y: 0, Width: 3, Height: 2},
-					dig:     0,
-					flipped: false,
-				},
+				stone: materials.NewStone(1, buffer.Buffer{
+					{true, false, true},
+					{true, true, true},
+				}),
 			}},
 		},
 		expect: 1,
@@ -518,39 +423,27 @@ func TestPlanCountIsolation(t *testing.T) {
 		title: "No.2",
 		m: &Plan{
 			field:  field,
-			buffer: NewBuffer(32, 32),
+			buffer: buffer.NewBuffer(32, 32),
 			positions: []*Position{{
 				x: 0, y: 0,
-				stone: &Stone{
-					number: 1,
-					buffer: Buffer{
-						{true, true},
-						{true, false},
-						{true, true},
-					},
-					rect:    Rect{X: 0, Y: 0, Width: 2, Height: 3},
-					dig:     0,
-					flipped: false,
-				},
+				stone: materials.NewStone(1, buffer.Buffer{
+					{true, true},
+					{true, false},
+					{true, true},
+				}),
 			}, {
 				x: 2, y: 0,
-				stone: &Stone{
-					number: 1,
-					buffer: Buffer{
-						{true},
-						{true},
-					},
-					rect:    Rect{X: 0, Y: 0, Width: 1, Height: 2},
-					dig:     0,
-					flipped: false,
-				},
+				stone: materials.NewStone(2, buffer.Buffer{
+					{true},
+					{true},
+				}),
 			}},
 		},
 		expect: 1,
 	}}
 	for _, c := range cases {
 		t.Log("start: ", c.title)
-		c.m.refreshBuffer(Rect{0, 0, 32, 32})
+		c.m.refreshBuffer(buffer.Rect{0, 0, 32, 32})
 		v := c.m.CountIsolation()
 		if c.expect != v {
 			t.Error("failed")
@@ -559,7 +452,7 @@ func TestPlanCountIsolation(t *testing.T) {
 }
 
 func BenchmarkPlanScore(b *testing.B) {
-	field, _ := NewField([]string{
+	field, _ := materials.NewField([]string{
 		"00000000000000001111111111111111",
 		"00000000000000001111111111111111",
 		"00100000000000001111111111111111",
@@ -596,10 +489,10 @@ func BenchmarkPlanScore(b *testing.B) {
 	plan := &Plan{
 		field:     field,
 		positions: nil,
-		buffer:    NewBuffer(32, 32),
+		buffer:    buffer.NewBuffer(32, 32),
 	}
 	for i := 0; i < b.N; i++ {
-		plan.refreshBuffer(Rect{0, 0, 32, 32})
+		plan.refreshBuffer(buffer.Rect{0, 0, 32, 32})
 		plan.Score()
 	}
 }

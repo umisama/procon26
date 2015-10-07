@@ -1,6 +1,7 @@
-package main
+package materials
 
 import (
+	"github.com/umisama/procon26/buffer"
 	"reflect"
 	"testing"
 )
@@ -23,7 +24,7 @@ func TestNewStoneBase(t *testing.T) {
 			"00000000",
 		},
 		expect: &StoneBase{
-			buffer: Buffer{
+			buffer: buffer.Buffer{
 				{true, false, false},
 				{true, false, false},
 				{true, false, false},
@@ -32,7 +33,7 @@ func TestNewStoneBase(t *testing.T) {
 				{true, false, false},
 				{true, true, true},
 			},
-			rect: Rect{X: 1, Y: 0, Width: 3, Height: 7},
+			rect: buffer.Rect{X: 1, Y: 0, Width: 3, Height: 7},
 		},
 	}, {
 		title: "shape likes T",
@@ -47,7 +48,7 @@ func TestNewStoneBase(t *testing.T) {
 			"00001000",
 		},
 		expect: &StoneBase{
-			buffer: Buffer{
+			buffer: buffer.Buffer{
 				{true, true, true, true, true},
 				{false, false, true, false, false},
 				{false, false, true, false, false},
@@ -56,7 +57,7 @@ func TestNewStoneBase(t *testing.T) {
 				{false, false, true, false, false},
 				{false, false, true, false, false},
 			},
-			rect: Rect{X: 2, Y: 1, Width: 5, Height: 7},
+			rect: buffer.Rect{X: 2, Y: 1, Width: 5, Height: 7},
 		},
 	}}
 
@@ -84,42 +85,42 @@ func TestStoneBaseVariations(t *testing.T) {
 	}{{
 		title: "No.1",
 		input: &StoneBase{
-			buffer: Buffer{
+			buffer: buffer.Buffer{
 				{true, false},
 				{true, true},
 			},
-			rect: Rect{X: 1, Y: 0, Width: 2, Height: 2},
+			rect: buffer.Rect{X: 1, Y: 0, Width: 2, Height: 2},
 		},
 		expect: []*Stone{{
-			buffer: Buffer{
+			buffer: buffer.Buffer{
 				{true, false},
 				{true, true},
 			},
-			rect:    Rect{X: 1, Y: 0, Width: 2, Height: 2},
+			rect:    buffer.Rect{X: 1, Y: 0, Width: 2, Height: 2},
 			dig:     0,
 			flipped: false,
 		}, {
-			buffer: Buffer{
+			buffer: buffer.Buffer{
 				{false, true},
 				{true, true},
 			},
-			rect:    Rect{X: 5, Y: 0, Width: 2, Height: 2},
+			rect:    buffer.Rect{X: 5, Y: 0, Width: 2, Height: 2},
 			dig:     0,
 			flipped: true,
 		}, {
-			buffer: Buffer{
+			buffer: buffer.Buffer{
 				{true, true},
 				{false, true},
 			},
-			rect:    Rect{X: 0, Y: 1, Width: 2, Height: 2},
+			rect:    buffer.Rect{X: 0, Y: 1, Width: 2, Height: 2},
 			dig:     1,
 			flipped: true,
 		}, {
-			buffer: Buffer{
+			buffer: buffer.Buffer{
 				{true, true},
 				{true, false},
 			},
-			rect:    Rect{X: 1, Y: 6, Width: 2, Height: 2},
+			rect:    buffer.Rect{X: 1, Y: 6, Width: 2, Height: 2},
 			dig:     2,
 			flipped: true,
 		}},
