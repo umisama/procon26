@@ -16,7 +16,9 @@ import (
 const PPROF_DIR = "pprof"
 
 var (
-	flagFilePath = flag.String("f", "", "file name")
+	flagFilePath    = flag.String("f", "", "file name")
+	flagTimeLimit   = flag.Int("t", 180, "time(sec)")
+	flagRepeatCount = flag.Int("n", 3, "max repeat count")
 )
 
 func main() {
@@ -38,7 +40,7 @@ func main() {
 		fmt.Println(err.Error())
 		return
 	}
-	game, err := NewGameMemo(lines, 1*time.Minute, 300)
+	game, err := NewGameMemo(lines, time.Duration(*flagTimeLimit)*time.Second, *flagRepeatCount)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
