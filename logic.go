@@ -17,6 +17,11 @@ type gameMemo struct {
 	Nmax  int
 }
 
+type Position struct {
+	x, y  int
+	stone *materials.Stone
+}
+
 func NewGameMemo(lines []string, limit time.Duration, Nmax int) (Game, error) {
 	field, stoneBase, err := readGameMaterials(lines)
 	if err != nil {
@@ -81,6 +86,7 @@ func (game *gameMemo) Algorithm() *plan.Plan {
 	case <-time.Tick(game.limit):
 		println("time is up!")
 	case <-end:
+		time.Sleep(15 * time.Second)
 		println("well done")
 	}
 	return best.Get()
@@ -94,7 +100,7 @@ func (game *gameMemo) algorithmCheckingPartialScore(x, y, score int) *plan.Plan 
 			continue
 		}
 		p = game.sub(1, p, score)
-		if p != nil && (best == nil || best.Score() > p.Score()) {
+		if p != nil && (best == nil || comparePlan(p, best) == '>') {
 			best = p
 		}
 	}
@@ -109,11 +115,7 @@ func (game *gameMemo) sub(it int, p *plan.Plan, latestBestScore int) *plan.Plan 
 		return p
 	}
 
-	type bestStoneCont struct {
-		stone *materials.Stone
-		x, y  int
-	}
-	var bestStone []bestStoneCont
+	var bestPositions []Position
 	var bestScore = 0x8fffffff
 	var bestIsolation = 0x8fffffff
 	sBase := game.stoneBase[it]
@@ -126,15 +128,15 @@ func (game *gameMemo) sub(it int, p *plan.Plan, latestBestScore int) *plan.Plan 
 				pScore := p.PartialScoreByExistStones()
 				pIso := p.CountIsolation()
 				if pScore < bestScore {
-					bestStone = []bestStoneCont{{stone, x, y}}
+					bestPositions = []Position{{x: x, y: y, stone: stone}}
 					bestScore = pScore
 					bestIsolation = pIso
 				} else if pScore == bestScore {
 					if bestIsolation > pIso {
-						bestStone = []bestStoneCont{{stone, x, y}}
+						bestPositions = []Position{{x: x, y: y, stone: stone}}
 						bestIsolation = pIso
 					} else if bestIsolation == pIso {
-						bestStone = append(bestStone, bestStoneCont{stone, x, y})
+						bestPositions = append(bestPositions, Position{x: x, y: y, stone: stone})
 					}
 				}
 				p.Pop()
@@ -142,30 +144,27 @@ func (game *gameMemo) sub(it int, p *plan.Plan, latestBestScore int) *plan.Plan 
 		}
 	}
 
-	var bestp *plan.Plan
-	if bestIsolation-p.CountIsolation() > 0 && bestIsolation != 0x8fffffff && it < 50 {
+	var bestPlan *plan.Plan
+	if bestIsolation-p.CountIsolation() > 0 && bestIsolation != 0x8fffffff && it < 1 {
 		pp := p.Copy()
-		bestp = game.sub(it+1, pp, latestBestScore)
+		bestPlan = game.sub(it+1, pp, latestBestScore)
 	}
-	if len(bestStone) != 0 {
-		bS := bestStone[rand.Intn(len(bestStone))]
-		pp := p.Copy()
-		pp.Put(bS.x, bS.y, bS.stone)
-		if candp := game.sub(it+1, pp, latestBestScore); bestp.Score() > candp.Score() {
-			bestp = candp
+	for i, posNo := range rand.Perm(len(bestPositions)) {
+		if i >= 1 {
+			break
 		}
-		bS = bestStone[rand.Intn(len(bestStone))]
-		pp = p.Copy()
-		pp.Put(bS.x, bS.y, bS.stone)
-		if candp := game.sub(it+1, pp, latestBestScore); bestp.Score() > candp.Score() {
-			bestp = candp
+		bestPosition := bestPositions[posNo]
+		pp := p.Copy()
+		pp.Put(bestPosition.x, bestPosition.y, bestPosition.stone)
+		if candidatePlan := game.sub(it+1, pp, latestBestScore); comparePlan(candidatePlan, bestPlan) == '>' {
+			bestPlan = candidatePlan
 		}
 	}
-	if len(bestStone) == 0 {
+	if len(bestPositions) == 0 {
 		pp := p.Copy()
-		bestp = game.sub(it+1, pp, latestBestScore)
+		bestPlan = game.sub(it+1, pp, latestBestScore)
 	}
-	return bestp
+	return bestPlan
 }
 
 func (game *gameMemo) willBestScore(p *plan.Plan, it int) int {

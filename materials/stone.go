@@ -204,6 +204,9 @@ func (m *Stone) Dig() int {
 		return 180
 	case 3:
 		return 90
+	case 0:
+		return 0
+	default:
+		panic("")
 	}
-	return 0
 }

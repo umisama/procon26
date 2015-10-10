@@ -57,9 +57,7 @@ func (b *BestMgr) Set(candidate *plan.Plan) {
 
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.best == nil || b.score > candidate.Score() {
-		b.set(candidate)
-	} else if b.score == candidate.Score() && b.numOfPiece > candidate.NumberOfPiece() {
+	if comparePlan(b.best, candidate) == '<' {
 		b.set(candidate)
 	}
 }
@@ -74,4 +72,15 @@ func (b *BestMgr) Get() *plan.Plan {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	return b.best
+}
+
+func comparePlan(f, s *plan.Plan) rune {
+	if f.Score() < s.Score() {
+		return '>'
+	} else if f.Score() == s.Score() && f.NumberOfPiece() < s.NumberOfPiece() {
+		return '>'
+	} else if f.Score() == s.Score() && f.NumberOfPiece() == s.NumberOfPiece() {
+		return '='
+	}
+	return '<'
 }
