@@ -34,11 +34,10 @@ func (position *Position) Get(x, y int) bool {
 func NewPlan(field *materials.Field, numStone int) *Plan {
 	p := &Plan{
 		field:     field,
-		positions: make([]*Position, 0, 32),
+		positions: make([]*Position, 0, 256),
 		numStone:  numStone,
 		buffer:    buffer.NewBuffer(field.Width(), field.Height()),
 	}
-	p.refreshBuffer(buffer.Rect{0, 0, field.Height(), field.Width()})
 	return p
 }
 
@@ -54,23 +53,30 @@ func (plan *Plan) Copy() *Plan {
 }
 
 func (plan *Plan) Get(x, y int) bool {
-	return plan.buffer.Get(x, y)
+	return plan.field.Get(x, y) || plan.buffer.Get(x, y)
 }
 
 func (plan *Plan) strictGet(x, y int) bool {
-	return plan.field.Get(x, y) || plan.GetStoneDot(x, y)
+	return plan.field.Get(x, y) || plan.strictGetStoneDot(x, y)
 }
 
 func (plan *Plan) refreshBuffer(rect buffer.Rect) {
 	for x := rect.X; x < rect.X+rect.Width; x++ {
 		for y := rect.Y; y < rect.Y+rect.Height; y++ {
-			plan.buffer.Set(x, y, plan.strictGet(x, y))
+			plan.buffer.Set(x, y, plan.strictGetStoneDot(x, y))
 		}
 	}
 	return
 }
 
 func (plan *Plan) GetStoneDot(x, y int) bool {
+	if x < 0 || x >= 32 || y < 0 || y >= 32 {
+		return false
+	}
+	return plan.buffer.Get(x, y)
+}
+
+func (plan *Plan) strictGetStoneDot(x, y int) bool {
 	for _, position := range plan.positions {
 		if position.Get(x, y) {
 			return true
@@ -130,7 +136,7 @@ func (plan *Plan) canPutStone(x, y int, stone *materials.Stone) bool {
 			if !stone.Get(stoneX, stoneY) {
 				continue
 			}
-			if plan.GetStoneDot(x+stoneX, y+stoneY) {
+			if plan.Get(x+stoneX, y+stoneY) {
 				return false
 			}
 		}
@@ -204,6 +210,7 @@ func (plan *Plan) Score() int {
 	for _, pos := range plan.positions {
 		score -= pos.stone.Count()
 	}
+
 	return score
 }
 

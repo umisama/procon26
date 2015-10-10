@@ -398,3 +398,37 @@ func TestBufferFlip(t *testing.T) {
 		}
 	}
 }
+
+func TestBufferCopy(t *testing.T) {
+	input := Buffer{
+		Line{false, true, false, false},
+		Line{false, true, false, false},
+		Line{false, true, false, false},
+		Line{false, true, false, false},
+	}
+
+	input2 := input.Copy()
+	input2[0][0] = true
+	input2[1][0] = true
+	input2[2][0] = true
+	input2[3][0] = true
+	for k := range input {
+		if reflect.DeepEqual(input[k], input2[k]) {
+			t.Error("error on ", k)
+			t.Log("input :", input[k].String())
+			t.Log("copied:", input2[k].String())
+		}
+	}
+
+	input[0][0] = true
+	input[1][0] = true
+	input[2][0] = true
+	input[3][0] = true
+	for k := range input {
+		if !reflect.DeepEqual(input[k], input2[k]) {
+			t.Error("error on ", k)
+			t.Log("input :", input[k].String())
+			t.Log("copied:", input2[k].String())
+		}
+	}
+}

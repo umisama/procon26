@@ -3,6 +3,7 @@ package plan
 import (
 	"github.com/umisama/procon26/buffer"
 	"github.com/umisama/procon26/materials"
+	"reflect"
 	"testing"
 )
 
@@ -447,6 +448,79 @@ func TestPlanCountIsolation(t *testing.T) {
 		v := c.m.CountIsolation()
 		if c.expect != v {
 			t.Error("failed")
+		}
+	}
+}
+
+func TestPlanPutPop(t *testing.T) {
+	field, _ := materials.NewField([]string{
+		"00000000000000001111111111111111",
+		"00000000000000001111111111111111",
+		"00100000000000001111111111111111",
+		"00000000000000001111111111111111",
+		"00000000000000001111111111111111",
+		"00000000000000001111111111111111",
+		"00000000000000001111111111111111",
+		"00000000000000001111111111111111",
+		"00000000000000001111111111111111",
+		"00000000000000001111111111111111",
+		"00000000000000001111111111111111",
+		"00000000010000001111111111111111",
+		"11111111111111111111111111111111",
+		"11111111111111111111111111111111",
+		"11111111111111111111111111111111",
+		"11111111111111111111111111111111",
+		"11111111111111111111111111111111",
+		"11111111111111111111111111111111",
+		"11111111111111111111111111111111",
+		"11111111111111111111111111111111",
+		"11111111111111111111111111111111",
+		"11111111111111111111111111111111",
+		"11111111111111111111111111111111",
+		"11111111111111111111111111111111",
+		"11111111111111111111111111111111",
+		"11111111111111111111111111111111",
+		"11111111111111111111111111111111",
+		"11111111111111111111111111111111",
+		"11111111111111111111111111111111",
+		"11111111111111111111111111111111",
+		"11111111111111111111111111111111",
+		"11111111111111111111111111111111",
+	})
+	plan := &Plan{
+		field:  field,
+		buffer: buffer.NewBuffer(32, 32),
+		positions: []*Position{{
+			x: 0, y: 0,
+			stone: materials.NewStone(0, buffer.Buffer{
+				{true, false, true},
+				{true, true, true},
+			}),
+		}},
+		numStone: 3,
+	}
+	plan.refreshBuffer(buffer.Rect{0, 0, 32, 32})
+
+	planc := plan.Copy()
+
+	for i := range plan.buffer {
+		if !reflect.DeepEqual(plan.buffer[i], planc.buffer[i]) {
+			t.Errorf("failed on %d", i)
+		}
+	}
+
+	if !planc.Put(3, 0, materials.NewStone(2, buffer.Buffer{
+		{true, true, true},
+		{true, true, true},
+		{true, true, false},
+	})) {
+		t.Errorf("failed")
+	}
+	planc.Pop()
+
+	for i := range plan.buffer {
+		if !reflect.DeepEqual(plan.buffer[i], planc.buffer[i]) {
+			t.Errorf("failed on %d", i)
 		}
 	}
 }
