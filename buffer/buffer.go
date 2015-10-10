@@ -265,7 +265,7 @@ func (buf Buffer) Copy() Buffer {
 	for y, line := range buf {
 		nline := make(Line, len(line))
 		copy(nline, line)
-		nbuf[y] = line
+		nbuf[y] = nline
 	}
 	return nbuf
 }

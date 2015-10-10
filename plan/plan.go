@@ -130,7 +130,7 @@ func (plan *Plan) canPutStone(x, y int, stone *materials.Stone) bool {
 			if !stone.Get(stoneX, stoneY) {
 				continue
 			}
-			if plan.Get(x+stoneX, y+stoneY) {
+			if plan.GetStoneDot(x+stoneX, y+stoneY) {
 				return false
 			}
 		}
