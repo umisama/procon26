@@ -201,7 +201,7 @@ func (plan *Plan) String() string {
 		if !first {
 			first = true
 		} else {
-			str += "\n"
+			str += "\r\n"
 		}
 
 		// find
@@ -219,7 +219,7 @@ func (plan *Plan) String() string {
 		}
 		str += fmt.Sprintf("%d", stone.Dig())
 	}
-	str += "\n"
+	str += "\r\n"
 	return str
 }
 

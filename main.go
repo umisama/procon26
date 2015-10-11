@@ -107,7 +107,7 @@ func getLinesFromFile(path string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	lines := strings.Split(string(body), "\n")
+	lines := strings.Split(string(body), "\r\n")
 	return lines, err
 }
 
