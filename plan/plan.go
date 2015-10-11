@@ -10,8 +10,9 @@ type Plan struct {
 	field     *materials.Field
 	positions []*Position
 
-	buffer   buffer.Buffer
-	numStone int
+	buffer     buffer.Buffer
+	areabuffer buffer.Buffer
+	numStone   int
 }
 
 type Position struct {
@@ -45,10 +46,11 @@ func (position *Position) IsArea(x, y int) bool {
 
 func NewPlan(field *materials.Field, numStone int) *Plan {
 	p := &Plan{
-		field:     field,
-		positions: make([]*Position, 0, 256),
-		numStone:  numStone,
-		buffer:    buffer.NewBuffer(field.Width(), field.Height()),
+		field:      field,
+		positions:  make([]*Position, 0, 256),
+		numStone:   numStone,
+		buffer:     buffer.NewBuffer(field.Width(), field.Height()),
+		areabuffer: buffer.NewBuffer(field.Width(), field.Height()),
 	}
 	return p
 }
@@ -57,10 +59,11 @@ func (plan *Plan) Copy() *Plan {
 	pos := make([]*Position, len(plan.positions))
 	copy(pos, plan.positions)
 	return &Plan{
-		field:     plan.field,
-		positions: pos,
-		numStone:  plan.numStone,
-		buffer:    plan.buffer.Copy(),
+		field:      plan.field,
+		positions:  pos,
+		numStone:   plan.numStone,
+		buffer:     plan.buffer.Copy(),
+		areabuffer: plan.areabuffer.Copy(),
 	}
 }
 
@@ -76,6 +79,7 @@ func (plan *Plan) refreshBuffer(rect buffer.Rect) {
 	for x := rect.X; x < rect.X+rect.Width; x++ {
 		for y := rect.Y; y < rect.Y+rect.Height; y++ {
 			plan.buffer.Set(x, y, plan.strictGetStoneDot(x, y))
+			plan.areabuffer.Set(x, y, plan.strictIsStoneArea(x, y))
 		}
 	}
 	return
@@ -97,13 +101,18 @@ func (plan *Plan) strictGetStoneDot(x, y int) bool {
 	return false
 }
 
-func (plan *Plan) IsStoneArea(x, y int) bool {
+func (plan *Plan) strictIsStoneArea(x, y int) bool {
 	for _, pos := range plan.positions {
 		if pos.IsArea(x, y) {
 			return true
 		}
 	}
 	return false
+}
+
+func (plan *Plan) IsStoneArea(x, y int) bool {
+	return plan.areabuffer.Get(x, y)
+	//return plan.strictIsStoneArea(x, y)
 }
 
 func (plan *Plan) Pop() {
