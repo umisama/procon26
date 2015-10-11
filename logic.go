@@ -145,13 +145,23 @@ func (game *gameMemo) sub(it int, p *plan.Plan, latestBestScore int) *plan.Plan 
 	}
 
 	var bestPlan *plan.Plan
-	if bestIsolation-p.CountIsolation() > 0 && bestIsolation != 0x8fffffff && it < 1 {
+	if bestIsolation-p.CountIsolation() > 0 && bestIsolation != 0x8fffffff && it < 10 {
 		pp := p.Copy()
 		bestPlan = game.sub(it+1, pp, latestBestScore)
 	}
 	for i, posNo := range rand.Perm(len(bestPositions)) {
-		if i >= 1 {
-			break
+		if game.numStone-it < 15 {
+			if i >= 3 {
+				break
+			}
+		} else if game.numStone-it < 20 {
+			if i >= 2 {
+				break
+			}
+		} else {
+			if i >= 1 {
+				break
+			}
 		}
 		bestPosition := bestPositions[posNo]
 		pp := p.Copy()
