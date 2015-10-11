@@ -31,6 +31,18 @@ func (position *Position) Get(x, y int) bool {
 	return position.stone.Get(posx, posy)
 }
 
+func (position *Position) IsArea(x, y int) bool {
+	posx := x - position.x
+	posy := y - position.y
+	if position.stone.Width() <= posx || posx < 0 {
+		return false
+	}
+	if position.stone.Height() <= posy || posy < 0 {
+		return false
+	}
+	return true
+}
+
 func NewPlan(field *materials.Field, numStone int) *Plan {
 	p := &Plan{
 		field:     field,
@@ -79,6 +91,15 @@ func (plan *Plan) GetStoneDot(x, y int) bool {
 func (plan *Plan) strictGetStoneDot(x, y int) bool {
 	for _, position := range plan.positions {
 		if position.Get(x, y) {
+			return true
+		}
+	}
+	return false
+}
+
+func (plan *Plan) IsStoneArea(x, y int) bool {
+	for _, pos := range plan.positions {
+		if pos.IsArea(x, y) {
 			return true
 		}
 	}
@@ -234,9 +255,9 @@ func (plan *Plan) PartialScoreByExistStones() int {
 		return 0x8fffffff
 	}
 	score := 0
-	for _, pos := range plan.positions {
-		for x := pos.x; x < pos.x+pos.stone.Width(); x++ {
-			for y := pos.y; y < pos.y+pos.stone.Height(); y++ {
+	for x := 0; x < 32; x++ {
+		for y := 0; y < 32; y++ {
+			if plan.IsStoneArea(x, y) {
 				if !plan.Get(x, y) {
 					score += 1
 				}
